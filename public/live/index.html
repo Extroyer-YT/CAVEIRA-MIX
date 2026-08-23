@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caveira Mix — Rádio Rock, Metal & Underground Ao Vivo</title>
+  <meta name="description" content="Caveira Mix — sua rádio online de Rock, Metal e Underground tocando 24h. Ouça ao vivo, veja a música atual, histórico e ouvintes em tempo real." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="author" content="Caveira Mix" />
+  <link rel="canonical" href="https://caveira-mix.uk/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="music.radio_station" />
+  <meta property="og:title" content="Caveira Mix — Rádio Rock, Metal & Underground" />
+  <meta property="og:description" content="Sua rádio online de Rock, Metal e Underground tocando 24h ao vivo." />
+  <meta property="og:image" content="https://caveira-mix.uk/live/assets/logo.png" />
+  <meta property="og:url" content="https://caveira-mix.uk/" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Caveira Mix — Rádio Rock & Metal" />
+  <meta name="twitter:description" content="Sua rádio online de Rock, Metal e Underground tocando 24h ao vivo." />
+  <meta name="twitter:image" content="https://caveira-mix.uk/live/assets/logo.png" />
+
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/live/assets/logo.png" />
+  <link rel="manifest" href="/live/manifest.json" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://caveira-mix.uk" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/live/css/styles.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js" defer></script>
+</head>
+<body>
+  <!-- Fundo dinâmico + partículas -->
+  <div class="bg-layer" aria-hidden="true"></div>
+  <canvas id="particles" aria-hidden="true"></canvas>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="brand">
+      <img src="/live/assets/logo.png" alt="Logo Caveira Mix" class="brand-logo" width="56" height="56" />
+      <div class="brand-text">
+        <span class="brand-name">CAVEIRA MIX</span>
+        <span class="brand-slogan">Rock • Metal • Underground</span>
+      </div>
+    </div>
+    <nav class="header-nav" id="header-nav" aria-label="Navegação principal">
+      <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
+      <ul class="nav-list" id="nav-list">
+        <li><a class="nav-link" href="#pedidos" data-target="pedidos">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <span>Pedidos de Músicas</span></a></li>
+        <li><a class="nav-link" href="#historico" data-target="historico">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span>Histórico</span></a></li>
+        <li><a class="nav-link" href="#mapa" data-target="mapa">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+          <span>Mapa 🌍</span></a></li>
+        <li><a class="nav-link" href="#comentarios" data-target="comentarios">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Comentários 💬</span></a></li>
+        <li><a class="nav-link" href="#compartilhar" data-target="compartilhar">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+          <span>Compartilhar</span></a></li>
+        <li><a class="nav-link nav-link-news" href="/live/noticias.html" target="_blank" rel="noopener">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
+          <span>Mundo do Rock 📰</span></a></li>
+      </ul>
+
+    </nav>
+    <div class="header-widgets">
+      <!-- Widget de Clima da Cidade do Usuário (à esquerda do relógio) -->
+      <div class="widget weather-widget" id="weather" title="Clima local aproximado">
+        <span class="weather-icon" id="weather-icon">⛅</span>
+        <div class="weather-info">
+          <div class="weather-main-row">
+            <span class="weather-temp" id="weather-temp">--°C</span>
+            <span class="weather-city" id="weather-city">Localizando...</span>
+          </div>
+          <span class="weather-cond" id="weather-cond">Carregando clima...</span>
+        </div>
+      </div>
+
+      <!-- Widget de Hora e Data -->
+      <div class="widget clock-widget">
+        <span id="greeting" class="greeting">Olá</span>
+        <span id="clock" class="clock">--:--:--</span>
+        <span id="date" class="date">--/--/----</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO / PLAYER -->
+    <section class="hero" id="hero">
+      <!-- TOPO DO HERO COM TÍTULO CENTRALIZADO E QUADRO DE LED À DIREITA -->
+      <div class="hero-top-grid">
+        <div class="hero-spacer-left" aria-hidden="true"></div>
+
+        <div class="hero-title-box">
+          <div class="live-badge"><span class="pulse-dot"></span> AO VIVO</div>
+          <h1 class="hero-title">CAVEIRA MIX</h1>
+          <p class="hero-slogan">A batida pesada que move a sua alma 🤘</p>
+        </div>
+
+        <div class="hero-led-right-col">
+          <!-- QUADRO DE LED / LETREIRO DIGITAL DA ADMINISTRAÇÃO (POSICIONADO NA DIREITA) -->
+          <div class="led-display-chassis" id="quadro-led-recados" aria-label="Painel de LED de Avisos da Administração">
+            <div class="led-chassis-top">
+              <div class="led-screws">
+                <span class="led-screw"></span>
+                <span class="led-screw"></span>
+              </div>
+              <div class="led-header-info">
+                <span class="led-indicator-pulse"></span>
+                <span class="led-tag-label" id="led-status-tag">AVISO DA ADMINISTRAÇÃO</span>
+                <span class="led-station-code">LIVE BULLETIN // CAVEIRA-MIX</span>
+              </div>
+              <div class="led-controls-mini" title="Trocar cor dos LEDs">
+                <button class="led-color-btn active" data-color="red" title="LED Vermelho (Original)" aria-label="LED Vermelho"></button>
+                <button class="led-color-btn" data-color="amber" title="LED Âmbar (Shows & Metrô)" aria-label="LED Âmbar"></button>
+                <button class="led-color-btn" data-color="green" title="LED Verde (Estúdio)" aria-label="LED Verde"></button>
+                <button class="led-color-btn" data-color="cyan" title="LED Ciano (Cyber)" aria-label="LED Ciano"></button>
+              </div>
+              <div class="led-screws">
+                <span class="led-screw"></span>
+                <span class="led-screw"></span>
+              </div>
+            </div>
+
+            <div class="led-matrix-screen led-theme-red" id="led-marquee-board" title="Passe o mouse ou toque para pausar a rolagem">
+              <!-- Grade física de micro-pontos de LED -->
+              <div class="led-dot-grid-overlay" aria-hidden="true"></div>
+              <div class="led-glass-glare" aria-hidden="true"></div>
+              
+              <!-- Faixa de texto em scroll contínuo (da direita para a esquerda) -->
+              <div class="led-marquee-viewport">
+                <div class="led-marquee-track" id="led-marquee-track-1">
+                  <span class="led-message-item">CARREGANDO LETREIRO DE LED DA ADMINISTRAÇÃO...</span>
+                </div>
+                <div class="led-marquee-track" id="led-marquee-track-2" aria-hidden="true">
+                  <span class="led-message-item">CARREGANDO LETREIRO DE LED DA ADMINISTRAÇÃO...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-stage">
+        <!-- QUADRO DE PATROCINADORES (CANTO ESQUERDO) -->
+        <div class="sponsors-container" id="sponsors-container">
+          <!-- Conteúdo gerado dinamicamente via Supabase (sponsors.js) -->
+        </div>
+
+        <!-- PLAYER PRINCIPAL -->
+        <div class="player-card glass">
+          <div class="disc-wrap">
+            <div id="disc" class="disc">
+              <img id="disc-cover" src="/live/assets/logo.png" alt="Capa da música atual" />
+            </div>
+            <!-- Braço de vitrola com agulha (puro CSS flutuante) -->
+            <div class="tonearm" id="tonearm" aria-hidden="true">
+              <div class="tonearm-base"></div>
+              <div class="tonearm-pivot"></div>
+              <div class="tonearm-rod">
+                <div class="tonearm-head">
+                  <div class="tonearm-needle"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="player-info">
+            <div class="equalizer" id="equalizer" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <p class="now-label">TOCANDO AGORA</p>
+            <h2 id="track-title" class="track-title">Carregando…</h2>
+            <p id="track-artist" class="track-artist">Caveira Mix</p>
+            <p id="track-album" class="track-album"></p>
+
+            <!-- Barra de Progresso da Música Atual -->
+            <div class="track-progress-wrap" id="track-progress-wrap">
+              <div class="track-progress-bar">
+                <div class="track-progress-fill" id="track-progress-fill"></div>
+              </div>
+              <div class="track-progress-time">
+                <span id="track-time-elapsed">00:00</span>
+                <span id="track-time-total">00:00</span>
+              </div>
+            </div>
+
+            <div class="controls">
+              <button id="btn-play" class="btn-play" aria-label="Play">▶</button>
+              <div class="volume-wrap">
+                <span class="vol-ico">🔊</span>
+                <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume" />
+              </div>
+            </div>
+
+            <!-- Próxima Música (AzuraCast Playing Next) -->
+            <div class="next-track-box" id="next-track-box" style="display: none;">
+              <div class="next-track-header">
+                <span class="next-track-badge"><span class="next-icon">⏭️</span> A SEGUIR</span>
+                <span class="next-track-time" id="next-track-time"></span>
+              </div>
+              <div class="next-track-content">
+                <img id="next-track-cover" class="next-track-cover" src="/live/assets/logo.png" alt="Capa da próxima música" />
+                <div class="next-track-meta">
+                  <p id="next-track-title" class="next-track-title">Carregando…</p>
+                  <p id="next-track-artist" class="next-track-artist"></p>
+                </div>
+              </div>
+            </div>
+
+            <p id="player-status" class="player-status"></p>
+          </div>
+        </div>
+
+        <!-- QUADRO DO EQUALIZADOR DE 7 BANDAS & AMPLIFICADOR (LADO DIREITO DO PLAYER) -->
+        <div class="equalizer-container" id="equalizer-container">
+          <!-- Conteúdo gerado dinamicamente via equalizer.js -->
+        </div>
+      </div>
+
+      <!-- VMU - Visual Music Unit -->
+      <div class="vmu-container" aria-label="Visualizador de áudio">
+        <canvas id="vmu-canvas"></canvas>
+      </div>
+
+      <audio id="audio" preload="none" crossorigin="anonymous"></audio>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats">
+      <div class="stat-card glass listeners-card">
+        <span class="stat-emoji">👥</span>
+        <span id="listeners" class="stat-number">--</span>
+        <span class="stat-label">Ouvindo agora</span>
+      </div>
+      <div class="stat-card glass">
+        <span class="stat-emoji">📡</span>
+        <span id="status-online" class="stat-number status-on">ONLINE</span>
+        <span class="stat-label">Status da rádio</span>
+      </div>
+      <div class="stat-card glass qr-card">
+        <span class="qr-badge">📡 MOBILE</span>
+        <img id="qrcode" alt="QR Code para ouvir no celular" width="96" height="96" />
+        <span class="stat-label">Ouça pelo celular</span>
+        <span class="qr-hint">Escaneie para ouvir no celular.</span>
+      </div>
+    </section>
+
+    <!-- MAPA DOS OUVINTES PELO MUNDO -->
+    <section class="listeners-map-section glass" id="mapa">
+      <div class="map-header-block">
+        <h3 class="map-section-title">🌍 Conexões Caveira Mix Pelo Mundo</h3>
+        <p class="map-section-subtitle">A comunidade do Rock & Metal sintonizada ao vivo em diversos cantos do planeta.</p>
+        
+        <div class="map-stats-row">
+          <div class="map-stat-chip">
+            <span>🌐 Países Conectados:</span>
+            <strong id="map-stat-countries">--</strong>
+          </div>
+          <div class="map-stat-chip">
+            <span>🏙️ Cidades Ativas:</span>
+            <strong id="map-stat-cities">--</strong>
+          </div>
+          <div class="map-stat-chip">
+            <span>👥 Audiência Estimada:</span>
+            <strong id="map-stat-total">--</strong>
+          </div>
+          <div class="map-stat-chip user-chip" id="user-location-badge">
+            <span>📍 Identificando seu ponto de conexão...</span>
+          </div>
+        </div>
+
+        <div class="map-toolbar">
+          <div class="map-filter-group">
+            <button class="map-filter-btn active" data-map-view="all">🌐 Mundo</button>
+            <button class="map-filter-btn" data-map-view="br">🇧🇷 Brasil</button>
+            <button class="map-filter-btn" data-map-view="americas">🌎 Américas</button>
+            <button class="map-filter-btn" data-map-view="eu">🌍 Europa</button>
+          </div>
+          <button class="map-my-loc-btn" id="btn-my-location" title="Ver minha localização no mapa">
+            🎯 Onde estou?
+          </button>
+        </div>
+      </div>
+
+      <div class="map-canvas-container">
+        <div id="listeners-leaflet-map"></div>
+      </div>
+
+      <div class="map-live-feed-bar">
+        <span style="font-weight: 700; color: #ff6b7a;">⚡ Feed Ao Vivo:</span>
+        <div class="map-live-feed-ticker" id="map-live-feed-ticker">
+          <span class="feed-pulse-dot"></span>
+          <span>Sintonizando frequências globais...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="search-section">
+      <div class="search-box glass">
+        <input id="search-input" type="text" placeholder="Pesquisar artista ou música…" />
+        <button id="search-btn" aria-label="Pesquisar">🔍</button>
+      </div>
+      <div id="search-results" class="search-results"></div>
+    </section>
+
+    <!-- ARTIST INFO (Last.fm) -->
+    <section class="artist-section glass" id="artist-section" hidden>
+      <h3 class="section-title">Sobre o Artista</h3>
+      <div class="artist-body">
+        <img id="artist-photo" class="artist-photo" alt="Foto do artista" />
+        <div class="artist-meta">
+          <h4 id="artist-name"></h4>
+          <p id="artist-tags" class="artist-tags"></p>
+          <p id="artist-bio" class="artist-bio"></p>
+          <p class="artist-similar-label">Artistas semelhantes:</p>
+          <p id="artist-similar" class="artist-similar"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="history-section" id="historico">
+      <h3 class="section-title">Últimas tocadas</h3>
+      <div id="history" class="history-grid">
+        <p class="muted">Carregando histórico…</p>
+      </div>
+    </section>
+
+    <!-- SONG REQUEST -->
+    <section class="request-section glass" id="pedidos">
+      <h3 class="section-title">🎵 Pedido de Música</h3>
+      <div class="request-form">
+        <div class="request-searchbar">
+          <div class="request-ac" id="request-ac">
+            <input id="request-search" type="text" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="request-results" placeholder="Buscar música no acervo da rádio…" />
+            <div id="request-results" class="request-results" role="listbox"></div>
+          </div>
+          <button id="request-submit" class="btn-request">Enviar pedido</button>
+        </div>
+        <div class="bands-accordion">
+          <button type="button" id="bands-toggle" class="bands-toggle" aria-expanded="false" aria-controls="bands-panel">
+            <span id="bands-label">🎸 Bandas disponíveis no acervo</span>
+            <span class="bands-caret">▾</span>
+          </button>
+          <div id="bands-panel" class="bands-panel">
+            <ul class="bands-list" id="bands-list">
+              <li class="muted">Carregando acervo…</li>
+            </ul>
+          </div>
+        </div>
+        <p id="request-status" class="request-status"></p>
+      </div>
+
+    </section>
+
+    <!-- NEWS -->
+    <section class="news-section" id="news-section" hidden>
+      <h3 class="section-title">📰 Últimas Notícias</h3>
+      <div id="news-list" class="news-list"></div>
+    </section>
+
+    <!-- MURAL DE COMENTÁRIOS / VOZ DOS HEADBANGERS -->
+    <section class="comments-section" id="comentarios">
+      <div class="section-header-wrap">
+        <div class="section-badge-pill">
+          <span class="pulse-dot"></span> COMUNIDADE ROCK
+        </div>
+        <h2 class="section-title">💬 Mural dos Headbangers</h2>
+        <p class="section-subtitle">Deixe seu recado, mande um salve ou comente sobre as músicas ao vivo com a galera!</p>
+      </div>
+
+      <!-- Barra de Identificação do Usuário -->
+      <div class="mural-user-bar glass" id="mural-user-bar">
+        <!-- Preenchido dinamicamente via auth-comments.js -->
+      </div>
+
+      <!-- Formulário de Envio de Comentário -->
+      <div class="comment-composer-card glass">
+        <form id="comment-form" class="comment-form">
+          <div class="composer-top">
+            <div class="rock-emoji-toolbar" title="Inserir emoji rápido">
+              <span class="emoji-toolbar-label">Atalhos:</span>
+              <button type="button" class="rock-emoji-btn" data-emoji="🤘" title="Mão Chifrada">🤘</button>
+              <button type="button" class="rock-emoji-btn" data-emoji="🔥" title="Fogo">🔥</button>
+              <button type="button" class="rock-emoji-btn" data-emoji="⚡" title="Raio">⚡</button>
+              <button type="button" class="rock-emoji-btn" data-emoji="💀" title="Caveira">💀</button>
+              <button type="button" class="rock-emoji-btn" data-emoji="🎸" title="Guitarra">🎸</button>
+              <button type="button" class="rock-emoji-btn" data-emoji="🍻" title="Cerveja">🍻</button>
+              <button type="button" class="rock-emoji-btn" data-emoji="🖤" title="Coração Negro">🖤</button>
+              <button type="button" class="rock-emoji-btn" data-emoji="🦇" title="Morcego">🦇</button>
+            </div>
+            <span class="comment-char-count" id="comment-char-count">0/600</span>
+          </div>
+
+          <div class="composer-input-wrap">
+            <textarea
+              id="comment-input"
+              class="comment-textarea"
+              placeholder="Deixe seu recado no mural (Faça login para salvar seu perfil)..."
+              maxlength="600"
+              rows="3"
+              required
+            ></textarea>
+          </div>
+
+          <div class="composer-footer">
+            <span class="composer-hint">💡 Respeite a galera e mantenha o espírito do Rock!</span>
+            <button type="submit" id="btn-post-comment" class="btn-post-comment">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              <span>Publicar Recado 🤘</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Feed de Recados em Tempo Real -->
+      <div class="comments-feed-wrap">
+        <div class="feed-header-bar">
+          <div class="feed-live-indicator">
+            <span class="live-blink-dot"></span>
+            <span>Feed ao Vivo</span>
+          </div>
+          <div class="feed-stats">
+            <span class="total-comments-label"><strong id="comments-total-badge">0</strong> mensagens no mural</span>
+          </div>
+        </div>
+
+        <div class="comments-feed-list" id="comments-feed-list">
+          <div class="comments-loading-skeleton">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHARE -->
+    <section class="share-section" id="compartilhar">
+      <h3 class="section-title share-title">📢 Compartilhe a Caveira Mix</h3>
+      <p class="share-subtitle">Ajude mais pessoas a descobrirem o melhor do Rock e Metal.</p>
+
+      <div class="share-buttons" id="share-buttons">
+        <a class="share-btn wa" data-net="whatsapp" href="#" target="_blank" rel="noopener">
+          <span class="share-ico">💬</span><span class="share-name">WhatsApp</span></a>
+        <a class="share-btn fb" data-net="facebook" href="#" target="_blank" rel="noopener">
+          <span class="share-ico">📘</span><span class="share-name">Facebook</span></a>
+        <a class="share-btn tg" data-net="telegram" href="#" target="_blank" rel="noopener">
+          <span class="share-ico">✈️</span><span class="share-name">Telegram</span></a>
+        <a class="share-btn x" data-net="x" href="#" target="_blank" rel="noopener">
+          <span class="share-ico">✖</span><span class="share-name">X</span></a>
+        <a class="share-btn ig" data-net="instagram" href="https://instagram.com" target="_blank" rel="noopener">
+          <span class="share-ico">📷</span><span class="share-name">Instagram</span></a>
+        <a class="share-btn yt" data-net="youtube" href="https://youtube.com" target="_blank" rel="noopener">
+          <span class="share-ico">▶</span><span class="share-name">YouTube</span></a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Balão flutuante: Buscador de playlist -->
+  <div class="playlist-finder-bubble">
+    <a id="playlist-finder-link" class="bubble-link" href="#" target="_blank" rel="noopener">
+      <span class="bubble-icon">🔍</span>
+      <span class="bubble-content">
+        <span class="bubble-title">Buscar Playlist</span>
+        <span class="bubble-subtitle">Encontre sua música</span>
+      </span>
+    </a>
+  </div>
+
+  <footer class="site-footer">
+    <img src="/live/assets/logo.png" alt="Caveira Mix" width="40" height="40" />
+    <p>© <span id="year"></span> Caveira Mix — Rádio Rock, Metal & Underground. Todos os direitos reservados.</p>
+  </footer>
+
+  <!-- MODAL DE AUTENTICAÇÃO (LOGIN & CADASTRO SUPABASE) -->
+  <div class="auth-modal-backdrop" id="auth-modal" aria-hidden="true" role="dialog">
+    <div class="auth-modal-card glass">
+      <button class="close-auth-modal" id="btn-close-auth-modal" aria-label="Fechar Modal">&times;</button>
+      
+      <div class="auth-modal-header">
+        <div class="auth-modal-logo">💀</div>
+        <h3 class="auth-modal-title">Comunidade Caveira Mix</h3>
+        <p class="auth-modal-sub">Entre ou crie sua conta para participar do mural com seu Avatar e Emblema Rock!</p>
+      </div>
+
+      <!-- Abas de Navegação -->
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tab-btn-login">ENTRAR</button>
+        <button type="button" class="auth-tab-btn" id="tab-btn-reg">CRIAR CONTA</button>
+      </div>
+
+      <!-- Formulário de Login -->
+      <div class="auth-view active" id="auth-view-login">
+        <form id="form-auth-login" class="auth-form">
+          <div class="auth-field">
+            <label for="login-email">E-mail</label>
+            <input type="email" id="login-email" placeholder="seuemail@rock.com" required autocomplete="email" />
+          </div>
+          <div class="auth-field">
+            <label for="login-password">Senha</label>
+            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <p class="auth-error-msg" id="auth-login-error"></p>
+          <button type="submit" class="btn-auth-submit" id="btn-submit-login">Entrar no Mural 🤘</button>
+        </form>
+        <div class="auth-footer-link">
+          Não tem conta? <button type="button" class="link-btn" id="switch-to-register">Criar conta grátis</button>
+        </div>
+      </div>
+
+      <!-- Formulário de Cadastro -->
+      <div class="auth-view" id="auth-view-reg">
+        <form id="form-auth-register" class="auth-form">
+          <div class="auth-field">
+            <label for="reg-name">Nome / Apelido Rock</label>
+            <input type="text" id="reg-name" placeholder="Ex: Valter Headbanger" required minlength="2" maxlength="40" />
+          </div>
+          <div class="auth-field">
+            <label for="reg-email">E-mail</label>
+            <input type="email" id="reg-email" placeholder="seuemail@rock.com" required autocomplete="email" />
+          </div>
+          <div class="auth-field">
+            <label for="reg-password">Senha (mínimo 6 caracteres)</label>
+            <input type="password" id="reg-password" placeholder="••••••••" required minlength="6" autocomplete="new-password" />
+          </div>
+
+          <!-- Escolha de Avatar Rock -->
+          <div class="auth-field">
+            <label>Escolha seu Avatar Rock:</label>
+            <div class="avatar-options-grid">
+              <button type="button" class="avatar-select-btn selected" data-avatar="💀" title="Caveira">💀</button>
+              <button type="button" class="avatar-select-btn" data-avatar="🎸" title="Guitarrista">🎸</button>
+              <button type="button" class="avatar-select-btn" data-avatar="🤘" title="Metalhead">🤘</button>
+              <button type="button" class="avatar-select-btn" data-avatar="⚡" title="Trovão">⚡</button>
+              <button type="button" class="avatar-select-btn" data-avatar="🐺" title="Lobo">🐺</button>
+              <button type="button" class="avatar-select-btn" data-avatar="🔥" title="Fogo">🔥</button>
+              <button type="button" class="avatar-select-btn" data-avatar="🦇" title="Morcego">🦇</button>
+              <button type="button" class="avatar-select-btn" data-avatar="🍻" title="Cerveja">🍻</button>
+            </div>
+          </div>
+
+          <!-- Escolha de Emblema Rock -->
+          <div class="auth-field">
+            <label>Escolha seu Emblema:</label>
+            <div class="badge-options-row">
+              <button type="button" class="badge-select-btn selected" data-badge="🤘 Headbanger">🤘 Headbanger</button>
+              <button type="button" class="badge-select-btn" data-badge="🎸 Guitar Hero">🎸 Guitar Hero</button>
+              <button type="button" class="badge-select-btn" data-badge="🔥 Fã VIP">🔥 Fã VIP</button>
+              <button type="button" class="badge-select-btn" data-badge="⚡ Underground">⚡ Underground</button>
+            </div>
+          </div>
+
+          <p class="auth-error-msg" id="auth-reg-error"></p>
+          <button type="submit" class="btn-auth-submit" id="btn-submit-reg">Concluir Cadastro 🤘</button>
+        </form>
+        <div class="auth-footer-link">
+          Já tem uma conta? <button type="button" class="link-btn" id="switch-to-login">Fazer login</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini-Player Fixo no Rodapé (Sticky Player) -->
+  <aside class="sticky-player glass" id="sticky-player" aria-label="Controle rápido da rádio">
+    <div class="sticky-track">
+      <img id="sticky-cover" class="sticky-cover" src="/live/assets/logo.png" alt="Música atual" />
+      <div class="sticky-info">
+        <div class="sticky-now-badge"><span class="pulse-dot"></span> NO AR</div>
+        <p id="sticky-title" class="sticky-title">Carregando…</p>
+        <p id="sticky-artist" class="sticky-artist">Caveira Mix</p>
+      </div>
+    </div>
+
+    <div class="sticky-center">
+      <div class="sticky-controls">
+        <button id="sticky-btn-play" class="sticky-btn-play" aria-label="Play / Pause">▶</button>
+      </div>
+      <div class="sticky-progress-wrap" id="sticky-progress-wrap">
+        <div class="sticky-progress-bar">
+          <div class="sticky-progress-fill" id="sticky-progress-fill"></div>
+        </div>
+        <span class="sticky-time" id="sticky-time">00:00 / 00:00</span>
+      </div>
+    </div>
+
+    <div class="sticky-volume-wrap">
+      <span class="sticky-vol-ico">🔊</span>
+      <input id="sticky-volume" type="range" min="0" max="100" value="80" aria-label="Volume" />
+      <button id="sticky-scroll-top" class="sticky-scroll-top" type="button" aria-label="Voltar ao topo" title="Ver player completo">▲</button>
+    </div>
+  </aside>
+
+  <script>
+    (function () {
+      var nav = document.getElementById('header-nav');
+      var list = document.getElementById('nav-list');
+      var toggle = document.getElementById('nav-toggle');
+      var links = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
+      if (!nav || !toggle) return;
+      toggle.addEventListener('click', function () {
+        var open = nav.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      links.forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          var el = document.getElementById(a.dataset.target);
+          if (!el) return;
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          nav.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+      var sections = links.map(function (a) { return document.getElementById(a.dataset.target); });
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (!en.isIntersecting) return;
+            links.forEach(function (a) {
+              a.classList.toggle('active', a.dataset.target === en.target.id);
+            });
+          });
+        }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+        sections.forEach(function (s) { if (s) io.observe(s); });
+      }
+    })();
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="/live/js/config.js"></script>
+  <script src="/live/js/sponsors.js" defer></script>
+  <script src="/live/js/listeners-map.js" defer></script>
+  <script src="/live/js/led-marquee.js" defer></script>
+  <script src="/live/js/equalizer.js" defer></script>
+  <script src="/live/js/auth-comments.js" defer></script>
+  <script type="module" src="/live/js/app.js"></script>
+</body>
+</html>

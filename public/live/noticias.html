@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mundo do Rock — Notícias, Melhores Álbuns & Lançamentos | Caveira Mix</title>
+  <meta name="description" content="Portal de Notícias de Rock e Heavy Metal da Rádio Caveira Mix. Ranking dos maiores álbuns de todos os tempos, novidades de bandas, festivais e bastidores." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="author" content="Caveira Mix" />
+  <link rel="canonical" href="https://caveira-mix.uk/live/noticias.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Mundo do Rock & Heavy Metal — Caveira Mix" />
+  <meta property="og:description" content="Notícias de bandas de rock, ranking dos melhores álbuns da história e tudo sobre a música pesada." />
+  <meta property="og:image" content="/live/assets/logo.png" />
+
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/live/assets/logo.png" />
+  <link rel="stylesheet" href="/live/css/styles.css" />
+  <link rel="stylesheet" href="/live/css/noticias.css" />
+</head>
+<body>
+  <!-- Fundo dinâmico da rádio -->
+  <div class="bg-layer" aria-hidden="true"></div>
+
+  <!-- Header do Portal de Notícias -->
+  <header class="news-header">
+    <a href="/live/index.html" class="news-brand-wrap" title="Ir para a página principal">
+      <img src="/live/assets/logo.png" alt="Logo Caveira Mix" class="brand-logo" width="48" height="48" />
+      <div class="brand-text">
+        <span class="brand-name">CAVEIRA MIX</span>
+        <span class="news-portal-tag">MUNDO DO ROCK 🤘</span>
+      </div>
+    </a>
+
+    <!-- Mini Streamer ao Vivo para continuar ouvindo -->
+    <div class="header-stream-bar" title="Ouvindo Caveira Mix Ao Vivo">
+      <button class="btn-header-play" id="btn-header-play" aria-label="Tocar ou Pausar Rádio Ao Vivo">▶</button>
+      <div class="header-stream-info">
+        <span class="header-stream-title" id="header-stream-title">Caveira Mix Ao Vivo</span>
+        <span class="header-stream-artist" id="header-stream-artist">Rock • Metal 24h</span>
+      </div>
+      <audio id="header-audio" preload="none"></audio>
+    </div>
+
+    <!-- Botão de Voltar para a Rádio Principal -->
+    <a href="/live/index.html" class="btn-back-radio">
+      <span>📻</span> Ir para o Player Completo
+    </a>
+  </header>
+
+  <main>
+    <!-- HERO DO PORTAL -->
+    <section class="news-hero">
+      <div class="news-hero-badge"><span class="pulse-dot"></span> PORTAL OFICIAL CAVEIRA MIX</div>
+      <h1 class="news-hero-title">O UNIVERSO DO ROCK & METAL</h1>
+      <p class="news-hero-sub">
+        Fique por dentro das últimas notícias das maiores bandas do planeta, explore o ranking definitivo dos álbuns lendários e descubra histórias insanas dos bastidores.
+      </p>
+
+      <!-- Pílulas de Navegação Rápida -->
+      <nav class="portal-nav-pills" aria-label="Navegação rápida do portal">
+        <a href="#noticias" class="portal-pill">📰 Notícias de Bandas</a>
+        <a href="#ranking-albuns" class="portal-pill">🏆 Melhores Álbuns</a>
+        <a href="#curiosidades" class="portal-pill">⚡ Fatos & Curiosidades</a>
+        <a href="#festivais" class="portal-pill">📅 Agenda & Festivais</a>
+      </nav>
+    </section>
+
+    <!-- SEÇÃO 1: NOTÍCIAS DO ROCK EM TEMPO REAL -->
+    <section class="portal-container" id="noticias">
+      <div class="portal-sec-header">
+        <div>
+          <h2 class="portal-sec-title"><span>📰</span> Notícias & Lançamentos de Bandas</h2>
+          <span class="news-live-status" id="news-live-status">🟢 Carregando notícias em tempo real...</span>
+        </div>
+        <div class="news-controls-row">
+          <div class="filter-tabs" role="tablist">
+            <button class="filter-btn active" data-news-filter="todas">Todas</button>
+            <button class="filter-btn" data-news-filter="metal">Heavy Metal</button>
+            <button class="filter-btn" data-news-filter="classico">Rock Clássico</button>
+            <button class="filter-btn" data-news-filter="nacional">Rock Nacional</button>
+            <button class="filter-btn" data-news-filter="festivais">Festivais</button>
+            <button class="filter-btn" data-news-filter="lancamentos">Lançamentos</button>
+          </div>
+          <button id="btn-refresh-news" class="btn-refresh-news" type="button" title="Atualizar notícias do rock agora">
+            <span class="btn-refresh-icon">🔄</span> Atualizar Notícias
+          </button>
+        </div>
+      </div>
+
+      <div class="news-grid" id="news-grid">
+        <!-- Renderizado dinamicamente via noticias.js -->
+      </div>
+    </section>
+
+    <!-- SEÇÃO 2: RANKING DOS MELHORES ÁLBUNS DE ROCK & METAL -->
+    <section class="portal-container" id="ranking-albuns">
+      <div class="portal-sec-header">
+        <div>
+          <h2 class="portal-sec-title"><span>🏆</span> Hall da Fama: Os Melhores Álbuns de Rock & Metal</h2>
+          <p class="share-subtitle" style="text-align: left; margin: 0.3rem 0 0;">As obras-primas definitivas que moldaram gerações e revolucionaram a história da música pesada.</p>
+        </div>
+        <div class="filter-tabs" role="tablist">
+          <button class="filter-btn active" data-album-filter="todos">Todos</button>
+          <button class="filter-btn" data-album-filter="heavy">Heavy Metal</button>
+          <button class="filter-btn" data-album-filter="thrash">Thrash Metal</button>
+          <button class="filter-btn" data-album-filter="hard">Hard Rock</button>
+          <button class="filter-btn" data-album-filter="grunge">Grunge / 90s</button>
+          <button class="filter-btn" data-album-filter="nacional">Metal Nacional</button>
+        </div>
+      </div>
+
+      <div class="albums-grid" id="albums-grid">
+        <!-- Renderizado dinamicamente via noticias.js -->
+      </div>
+    </section>
+
+    <!-- SEÇÃO 3: CURIOSIDADES & BASTIDORES DO ROCK -->
+    <section class="portal-container" id="curiosidades">
+      <div class="portal-sec-header">
+        <div>
+          <h2 class="portal-sec-title"><span>⚡</span> Fatos Insanos & Histórias de Bastidores</h2>
+          <p class="share-subtitle" style="text-align: left; margin: 0.3rem 0 0;">Momentos históricos, loucuras de estúdio e lendas urbanas reais do Rock.</p>
+        </div>
+        <div class="trivia-actions">
+          <button id="btn-shuffle-trivia" class="btn-trivia-shuffle" type="button">
+            <span class="btn-dice">🎲</span> Sortear Novas Histórias
+          </button>
+        </div>
+      </div>
+
+      <!-- Destaque: Fato do Dia -->
+      <div id="trivia-daily-spotlight" class="trivia-spotlight-card"></div>
+
+      <!-- Grid de Histórias Aleatórias -->
+      <div class="trivia-grid" id="trivia-grid">
+        <!-- Renderizado dinamicamente via noticias.js -->
+      </div>
+    </section>
+
+    <!-- SEÇÃO 4: AGENDA DE FESTIVAIS & BUSCADOR DE SHOWS -->
+    <section class="portal-container" id="festivais">
+      <div class="portal-sec-header">
+        <div>
+          <h2 class="portal-sec-title"><span>📅</span> Radar de Shows & Festivais</h2>
+          <p class="share-subtitle" style="text-align: left; margin: 0.3rem 0 0;">Consulte turnês mundiais de qualquer banda e fique por dentro dos festivais confirmados.</p>
+        </div>
+      </div>
+
+      <!-- Buscador de Turnê por Banda -->
+      <div class="tour-finder-box glass">
+        <div class="tour-search-row">
+          <span class="tour-search-icon">🎸</span>
+          <input type="text" id="tour-search-input" placeholder="Digite o nome de uma banda (ex: Iron Maiden, Sepultura, Metallica, Ghost)..." aria-label="Buscar turnê de banda" />
+          <button type="button" id="tour-search-btn" class="btn-tour-search">Buscar Turnê</button>
+        </div>
+        <div class="tour-quick-pills">
+          <span class="tour-quick-label">Sugestões rápidas:</span>
+          <button class="tour-quick-pill" data-band="Iron Maiden">Iron Maiden</button>
+          <button class="tour-quick-pill" data-band="Sepultura">Sepultura</button>
+          <button class="tour-quick-pill" data-band="Metallica">Metallica</button>
+          <button class="tour-quick-pill" data-band="Ghost">Ghost</button>
+          <button class="tour-quick-pill" data-band="Slipknot">Slipknot</button>
+          <button class="tour-quick-pill" data-band="AC/DC">AC/DC</button>
+          <button class="tour-quick-pill" data-band="Angra">Angra</button>
+        </div>
+      </div>
+
+      <!-- Resultados da busca de turnê -->
+      <div id="tour-results" class="tour-results-box" style="display: none;"></div>
+
+      <h3 class="fest-subheading">🔥 Principais Festivais Confirmados 2025 / 2026:</h3>
+      <div class="festivals-grid" id="festivals-grid">
+        <!-- Renderizado dinamicamente via noticias.js -->
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <img src="/live/assets/logo.png" alt="Caveira Mix" width="44" height="44" />
+    <p>© <span id="news-year"></span> Caveira Mix — Mundo do Rock & Metal. Todos os direitos reservados.</p>
+    <a href="/live/index.html" class="btn-back-radio" style="margin-top: 0.8rem;">
+      <span>📻</span> Voltar para a Rádio Ao Vivo
+    </a>
+  </footer>
+
+  <script src="/live/js/config.js"></script>
+  <script src="/live/js/noticias.js"></script>
+</body>
+</html>

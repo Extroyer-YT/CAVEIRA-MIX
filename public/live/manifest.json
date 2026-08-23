@@ -1,0 +1,12 @@
+{
+  "name": "Caveira Mix — Rádio Rock & Metal",
+  "short_name": "Caveira Mix",
+  "description": "Rádio online de Rock, Metal e Underground tocando 24h ao vivo.",
+  "start_url": "/live/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/live/assets/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

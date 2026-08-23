@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://caveira-mix.uk/sitemap.xml
