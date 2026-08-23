@@ -72,8 +72,8 @@ window.CAVEIRA_CONFIG = {
   COVER_CACHE_TTL_DAYS: 7,
 
   // --- Supabase (lidas do Cloudflare Secret / .dev.vars) ---
-  SUPABASE_URL:      __ENV.SUPABASE_URL      || "",
-  SUPABASE_ANON_KEY: __ENV.SUPABASE_ANON_KEY || "",
+  SUPABASE_URL:      __ENV.SUPABASE_URL      || "https://dycirxcxwnmuzhwbpltv.supabase.co",
+  SUPABASE_ANON_KEY: __ENV.SUPABASE_ANON_KEY || "sb_publishable_mQoV-19A5eWCVrPzUyywew_-MqP7XU4",
   SUPABASE_TABLE_SPONSORS:       "patrocinadores",
   SUPABASE_TABLE_LED:            "letreiro_led",
   SUPABASE_TABLE_COMMENTS:       "comentarios_mural",
