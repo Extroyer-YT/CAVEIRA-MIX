@@ -173,10 +173,21 @@
   /* ============================================================
      2. SUPABASE HEARTBEAT & SINCRONIZAÇÃO EM TEMPO REAL
      ============================================================ */
+  // Utilitário: fetch com timeout para redes lentas
+  function fetchWithTimeout(url, options, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal })
+      .finally(() => clearTimeout(timer));
+  }
+
   async function sendHeartbeatToSupabase(userLoc) {
     const supabaseUrl = (CFG.SUPABASE_URL || "").trim().replace(/\/+$/, "");
     const supabaseKey = (CFG.SUPABASE_ANON_KEY || "").trim();
-    if (!supabaseUrl || !supabaseKey || !userLoc) return;
+    if (!supabaseUrl || !supabaseKey || !userLoc) {
+      console.warn("[CaveiraMix] Heartbeat ignorado: Supabase URL ou Key ausente.", { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey });
+      return;
+    }
 
     try {
       const endpoint = `${supabaseUrl}/rest/v1/ouvintes_online`;
@@ -192,31 +203,40 @@
         last_ping: new Date().toISOString(),
       };
 
-      await fetch(endpoint, {
+      const res = await fetchWithTimeout(endpoint, {
         method: "POST",
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`,
           "Content-Type": "application/json",
-          Prefer: "resolution=merge-duplicates",
+          // return=minimal evita body de resposta; resolution=merge-duplicates faz upsert pelo PK
+          Prefer: "return=minimal,resolution=merge-duplicates",
         },
         body: JSON.stringify(payload),
       });
-    } catch (_) {
-      // Falha silenciosa
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "(sem corpo)");
+        console.error(`[CaveiraMix] Heartbeat falhou: HTTP ${res.status}`, errText);
+      }
+    } catch (err) {
+      console.error("[CaveiraMix] Erro ao enviar heartbeat:", err.message || err);
     }
   }
 
   async function fetchOnlineListenersFromSupabase() {
     const supabaseUrl = (CFG.SUPABASE_URL || "").trim().replace(/\/+$/, "");
     const supabaseKey = (CFG.SUPABASE_ANON_KEY || "").trim();
-    if (!supabaseUrl || !supabaseKey) return null;
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[CaveiraMix] fetchListeners ignorado: Supabase URL ou Key ausente.");
+      return null;
+    }
 
     try {
-      // Busca ouvintes que enviaram ping nos últimos 2 minutos
-      const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-      const endpoint = `${supabaseUrl}/rest/v1/ouvintes_online?select=*&last_ping=gte.${since}&order=last_ping.desc`;
-      const res = await fetch(endpoint, {
+      // Busca ouvintes que enviaram ping nos últimos 3 minutos
+      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const endpoint = `${supabaseUrl}/rest/v1/ouvintes_online?select=*&last_ping=gte.${encodeURIComponent(since)}&order=last_ping.desc`;
+      const res = await fetchWithTimeout(endpoint, {
         method: "GET",
         headers: {
           apikey: supabaseKey,
@@ -225,10 +245,16 @@
         },
       });
 
-      if (!res.ok) return null;
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "(sem corpo)");
+        console.error(`[CaveiraMix] fetchListeners falhou: HTTP ${res.status}`, errText);
+        return null;
+      }
       const data = await res.json();
+      console.log(`[CaveiraMix] Ouvintes no Supabase: ${Array.isArray(data) ? data.length : 0}`);
       return Array.isArray(data) ? data : null;
-    } catch (_) {
+    } catch (err) {
+      console.error("[CaveiraMix] Erro ao buscar ouvintes:", err.message || err);
       return null;
     }
   }

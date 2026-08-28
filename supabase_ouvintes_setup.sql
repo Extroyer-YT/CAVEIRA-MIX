@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.ouvintes_online (
 -- 2. Habilita Row Level Security (RLS)
 ALTER TABLE public.ouvintes_online ENABLE ROW LEVEL SECURITY;
 
--- 3. Políticas de acesso seguro (Leitura pública e inserção/atualização anônima)
+-- 3. Políticas de acesso seguro (Leitura pública e inserção/atualização/deleção anônima)
 DROP POLICY IF EXISTS "Leitura pública de ouvintes online" ON public.ouvintes_online;
 CREATE POLICY "Leitura pública de ouvintes online"
 ON public.ouvintes_online
@@ -40,6 +40,15 @@ CREATE POLICY "Atualização anônima de heartbeat de ouvinte"
 ON public.ouvintes_online
 FOR UPDATE
 TO anon, authenticated
+USING (true)
+WITH CHECK (true);
+
+-- IMPORTANTE: Policy de DELETE para a função de limpeza funcionar corretamente
+DROP POLICY IF EXISTS "Deleção anônima de ouvintes inativos" ON public.ouvintes_online;
+CREATE POLICY "Deleção anônima de ouvintes inativos"
+ON public.ouvintes_online
+FOR DELETE
+TO anon, authenticated
 USING (true);
 
 -- 4. Função e trigger para limpeza periódica de ouvintes inativos (> 3 minutos)
@@ -53,3 +62,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 5. Habilita Realtime no Supabase para a tabela de ouvintes
 ALTER PUBLICATION supabase_realtime ADD TABLE public.ouvintes_online;
+
+-- 6. Índice para acelerar a busca por last_ping (melhora performance da query de ouvintes ativos)
+CREATE INDEX IF NOT EXISTS idx_ouvintes_last_ping ON public.ouvintes_online (last_ping DESC);
