@@ -60,8 +60,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. Habilita Realtime no Supabase para a tabela de ouvintes
-ALTER PUBLICATION supabase_realtime ADD TABLE public.ouvintes_online;
+-- 5. Habilita Realtime no Supabase para a tabela de ouvintes (de forma segura sem erro caso já exista)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public' 
+        AND tablename = 'ouvintes_online'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.ouvintes_online;
+    END IF;
+END $$;
 
 -- 6. Índice para acelerar a busca por last_ping (melhora performance da query de ouvintes ativos)
 CREATE INDEX IF NOT EXISTS idx_ouvintes_last_ping ON public.ouvintes_online (last_ping DESC);
