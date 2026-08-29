@@ -452,61 +452,6 @@
       </div>
     </section>
 
-    <!-- SESSÃO DE PODCASTS (CAVEIRA CAST) -->
-    <section class="podcasts-section glass" id="podcasts">
-      <div class="section-header-row">
-        <div>
-          <div class="section-badge-pill">
-            <span class="pulse-dot"></span> EXCLUSIVO CAVEIRA MIX
-          </div>
-          <h2 class="section-title">🎙️ Caveira Cast — O Podcast do Rock</h2>
-          <p class="section-subtitle">Entrevistas, debates, histórias underground e tudo sobre o mundo do Rock & Heavy Metal.</p>
-        </div>
-        <button type="button" class="btn-add-podcast" id="btn-open-add-podcast">
-          <span>➕ Adicionar Episódio</span>
-        </button>
-      </div>
-
-      <!-- Player de Áudio Dedicado para o Podcast (Fixado no topo da grade quando ativo) -->
-      <div class="podcast-player-bar glass" id="podcast-player-bar">
-        <div class="podcast-player-left">
-          <img id="podcast-player-cover" src="/live/assets/logo.png" alt="Capa Podcast" class="podcast-player-thumb" />
-          <div class="podcast-player-info">
-            <span class="podcast-now-tag">TOCANDO EPISÓDIO</span>
-            <h4 id="podcast-player-title" class="podcast-player-title">Selecione um episódio para ouvir</h4>
-            <p id="podcast-player-host" class="podcast-player-host">Caveira Cast</p>
-          </div>
-        </div>
-
-        <div class="podcast-player-center">
-          <div class="podcast-player-controls">
-            <button class="podcast-ctrl-btn" id="podcast-player-play-btn" aria-label="Tocar / Pausar">▶</button>
-            <button class="podcast-speed-btn" id="podcast-speed-btn" title="Velocidade de reprodução">1x</button>
-          </div>
-          <div class="podcast-progress-container">
-            <span class="podcast-time-label" id="podcast-player-time">00:00 / 00:00</span>
-            <div class="podcast-progress-bar" id="podcast-progress-bar">
-              <div class="podcast-progress-fill" id="podcast-progress-fill"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="podcast-player-right">
-          <span class="podcast-vol-icon">🔊</span>
-          <input type="range" min="0" max="100" value="90" class="podcast-volume-slider" id="podcast-volume" aria-label="Volume do podcast" />
-        </div>
-      </div>
-
-      <!-- Grade de Episódios -->
-      <div class="podcast-grid" id="podcast-list-container">
-        <!-- Preenchido dinamicamente via podcasts.js -->
-        <div class="comments-loading-skeleton">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-        </div>
-      </div>
-    </section>
-
     <!-- SHARE -->
     <section class="share-section" id="compartilhar">
       <h3 class="section-title share-title">📢 Compartilhe a Caveira Mix</h3>
@@ -663,68 +608,6 @@
     </div>
   </aside>
 
-  <!-- MODAL DE ADICIONAR PODCAST (SUPABASE) -->
-  <div class="auth-modal-backdrop" id="modal-add-podcast" aria-hidden="true" role="dialog">
-    <div class="auth-modal-card glass">
-      <button class="close-auth-modal" id="btn-close-add-podcast" aria-label="Fechar Modal">&times;</button>
-      
-      <div class="auth-modal-header">
-        <div class="auth-modal-logo">🎙️</div>
-        <h3 class="auth-modal-title">Novo Episódio — Caveira Cast</h3>
-        <p class="auth-modal-sub">Adicione um novo episódio de podcast para os ouvintes da Caveira Mix escutarem no site.</p>
-      </div>
-
-      <form id="form-add-podcast" class="auth-form">
-        <div class="auth-field">
-          <label for="add-pod-titulo">Título do Episódio *</label>
-          <input type="text" id="add-pod-titulo" placeholder="Ex: Caveira Cast #04 — Especial Rock Clássico" required />
-        </div>
-
-        <div class="form-row-2col">
-          <div class="auth-field">
-            <label for="add-pod-host">Apresentador / Host</label>
-            <input type="text" id="add-pod-host" placeholder="Ex: Beto Caveira" value="Caveira Mix" />
-          </div>
-          <div class="auth-field">
-            <label for="add-pod-ep">Número do Episódio</label>
-            <input type="number" id="add-pod-ep" placeholder="4" min="1" value="1" />
-          </div>
-        </div>
-
-        <div class="auth-field">
-          <label for="add-pod-audio">Link do Áudio (MP3 / Stream) *</label>
-          <input type="url" id="add-pod-audio" placeholder="https://seusite.com/audio.mp3 ou link público" required />
-        </div>
-
-        <div class="form-row-2col">
-          <div class="auth-field">
-            <label for="add-pod-capa">URL da Imagem de Capa</label>
-            <input type="url" id="add-pod-capa" placeholder="/live/assets/logo.png ou link de imagem" />
-          </div>
-          <div class="auth-field">
-            <label for="add-pod-duracao">Duração Estimada</label>
-            <input type="text" id="add-pod-duracao" placeholder="Ex: 42:15" value="35:00" />
-          </div>
-        </div>
-
-        <div class="auth-field">
-          <label for="add-pod-desc">Descrição / Resumo do Episódio</label>
-          <textarea id="add-pod-desc" rows="3" placeholder="Conte do que se trata este episódio..."></textarea>
-        </div>
-
-        <div class="auth-field-checkbox">
-          <label>
-            <input type="checkbox" id="add-pod-destaque" />
-            <span>Colocar este episódio como <strong>🔥 DESTAQUE</strong> no topo</span>
-          </label>
-        </div>
-
-        <p class="auth-error-msg" id="add-podcast-msg"></p>
-        <button type="submit" class="btn-auth-submit" id="btn-submit-add-podcast">Salvar e Publicar Episódio 🤘</button>
-      </form>
-    </div>
-  </div>
-
   <script>
     (function () {
       var nav = document.getElementById('header-nav');
@@ -767,7 +650,6 @@
   <script src="/live/js/led-marquee.js" defer></script>
   <script src="/live/js/equalizer.js" defer></script>
   <script src="/live/js/auth-comments.js" defer></script>
-  <script src="/live/js/podcasts.js" defer></script>
   <script type="module" src="/live/js/app.js"></script>
 </body>
 </html>
