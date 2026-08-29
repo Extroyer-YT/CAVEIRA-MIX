@@ -358,9 +358,14 @@ async function updateNowPlaying() {
     trackProgressState.fetchTime = Date.now();
     tickProgressBar();
 
-    const listeners = data.listeners?.current ?? data.listeners?.total ?? 0;
-    elListeners.textContent = listeners;
-    elListeners.style.animation = "none"; void elListeners.offsetWidth; elListeners.style.animation = "";
+    const azuraListeners = data.listeners?.current ?? data.listeners?.total ?? 0;
+    const currentGlobalMapListeners = parseInt(document.getElementById("map-stat-total")?.textContent) || 0;
+    // Usa a contagem de ouvintes do mapa em tempo real se for maior/disponível, senão usa do AzuraCast
+    const finalListeners = Math.max(azuraListeners, currentGlobalMapListeners);
+    if (elListeners) {
+      elListeners.textContent = finalListeners;
+      elListeners.style.animation = "none"; void elListeners.offsetWidth; elListeners.style.animation = "";
+    }
 
     $("status-online").textContent = data.is_online === false ? "OFFLINE" : "ONLINE";
 

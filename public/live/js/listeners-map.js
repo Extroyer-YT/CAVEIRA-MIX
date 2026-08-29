@@ -460,13 +460,14 @@
     animateCount(elCities, totalCities);
     animateCount(elGlobal, totalListeners);
 
-    // Pulsa os chips quando os valores mudam
-    [elCountries, elCities, elGlobal].forEach((el) => {
-      if (!el) return;
-      el.closest(".map-stat-chip")?.classList.remove("chip-updated");
-      void el.closest(".map-stat-chip")?.offsetWidth;
-      el.closest(".map-stat-chip")?.classList.add("chip-updated");
-    });
+    // Sincroniza também o contador principal 'Ouvindo agora' (topo da página)
+    const elMainListeners = document.getElementById("listeners");
+    if (elMainListeners) {
+      elMainListeners.textContent = totalListeners;
+      elMainListeners.style.animation = "none";
+      void elMainListeners.offsetWidth;
+      elMainListeners.style.animation = "";
+    }
   }
 
   /* ============================================================
@@ -662,11 +663,22 @@
 
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    // Tiles Dark Matter do CartoDB
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    // Tiles Dark com camada ultra estável e fallback sem bloqueio de API Key
+    const primaryTileUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+    const tileLayer = L.tileLayer(primaryTileUrl, {
       subdomains: "abcd",
       maxZoom: 19,
+      errorTileUrl: "https://tile.openstreetmap.org/0/0/0.png",
     }).addTo(map);
+
+    // Se houver qualquer erro de carregamento em tiles, faz fallback transparente
+    tileLayer.on("tileerror", function (error) {
+      if (!tileLayer._hasFallenBack) {
+        tileLayer._hasFallenBack = true;
+        console.warn("[CaveiraMix] Alternando provedor de mapa para Stadia/OSM fallback...");
+        tileLayer.setUrl("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png");
+      }
+    });
 
     markersLayerGroup = L.layerGroup().addTo(map);
 
