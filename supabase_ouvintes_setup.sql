@@ -51,12 +51,12 @@ FOR DELETE
 TO anon, authenticated
 USING (true);
 
--- 4. Função e trigger para limpeza periódica de ouvintes inativos (> 3 minutos)
+-- 4. Função para limpeza de ouvintes inativos (> 45 segundos sem heartbeat)
 CREATE OR REPLACE FUNCTION limpar_ouvintes_inativos()
 RETURNS void AS $$
 BEGIN
     DELETE FROM public.ouvintes_online
-    WHERE last_ping < (timezone('utc'::text, now()) - INTERVAL '3 minutes');
+    WHERE last_ping < (timezone('utc'::text, now()) - INTERVAL '45 seconds');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

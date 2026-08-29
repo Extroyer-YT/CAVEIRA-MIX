@@ -224,6 +224,32 @@
     }
   }
 
+  // Desconecta ouvinte imediatamente quando a aba/navegador for fechado
+  function disconnectUser() {
+    const supabaseUrl = (CFG.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+    const supabaseKey = (CFG.SUPABASE_ANON_KEY || "").trim();
+    if (!supabaseUrl || !supabaseKey || !sessionId) return;
+
+    const endpoint = `${supabaseUrl}/rest/v1/ouvintes_online?session_id=eq.${sessionId}`;
+    
+    // Tenta usar sendBeacon para saída garantida mesmo fechando a janela
+    if (navigator.sendBeacon) {
+      // Supabase REST DELETE via fetch/beacon
+      fetch(endpoint, {
+        method: "DELETE",
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        keepalive: true,
+      }).catch(() => {});
+    }
+  }
+
+  // Registra eventos de saída para desconexão imediata
+  window.addEventListener("pagehide", disconnectUser);
+  window.addEventListener("beforeunload", disconnectUser);
+
   async function fetchOnlineListenersFromSupabase() {
     const supabaseUrl = (CFG.SUPABASE_URL || "").trim().replace(/\/+$/, "");
     const supabaseKey = (CFG.SUPABASE_ANON_KEY || "").trim();
@@ -233,8 +259,8 @@
     }
 
     try {
-      // Busca ouvintes que enviaram ping nos últimos 3 minutos
-      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      // Considera ativo apenas quem enviou heartbeat nos últimos 45 segundos (tempo real ultra preciso)
+      const since = new Date(Date.now() - 45 * 1000).toISOString();
       const endpoint = `${supabaseUrl}/rest/v1/ouvintes_online?select=*&last_ping=gte.${encodeURIComponent(since)}&order=last_ping.desc`;
       const res = await fetchWithTimeout(endpoint, {
         method: "GET",
@@ -251,7 +277,6 @@
         return null;
       }
       const data = await res.json();
-      console.log(`[CaveiraMix] Ouvintes no Supabase: ${Array.isArray(data) ? data.length : 0}`);
       return Array.isArray(data) ? data : null;
     } catch (err) {
       console.error("[CaveiraMix] Erro ao buscar ouvintes:", err.message || err);
@@ -691,8 +716,8 @@
     // 2. Sincroniza dados iniciais
     await syncMapData();
 
-    // 3. Polling em tempo real a cada 25 segundos (sem precisar de F5)
-    setInterval(syncMapData, 25000);
+    // 3. Polling em tempo real rápido a cada 12 segundos (atualização instantânea ao entrar/sair)
+    setInterval(syncMapData, 12000);
   }
 
   function boot() {
