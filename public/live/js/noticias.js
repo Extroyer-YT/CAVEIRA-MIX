@@ -510,14 +510,53 @@ async function fetchLiveRockNews(force = false) {
   if (statusEl) statusEl.textContent = "🔄 Consultando notícias de Rock & Metal...";
 
   try {
-    // 1. Verifica cache local recente (15 min) se não for forçado
-    if (!force) {
+    let parsedNews = [];
+
+    // 1. PRIORIDADE MÁXIMA: Busca notícias cadastradas / editadas no Supabase
+    const supabaseUrl = (CFG.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+    const supabaseKey = (CFG.SUPABASE_ANON_KEY || "").trim();
+
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const tableName = CFG.SUPABASE_TABLE_NEWS || "noticias";
+        const spUrl = `${supabaseUrl}/rest/v1/${tableName}?select=*&order=ordem.asc,created_at.desc`;
+        const spRes = await fetch(spUrl, {
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (spRes.ok) {
+          const spData = await spRes.json();
+          if (Array.isArray(spData) && spData.length > 0) {
+            parsedNews = spData.map((item, idx) => ({
+              id: item.id || `sp-news-${idx}`,
+              category: item.categoria || "metal",
+              catLabel: item.categoria_label || "Heavy Metal",
+              title: item.titulo,
+              desc: item.descricao,
+              thumb: item.imagem_url || ROCK_THUMBS_LIBRARY.metal,
+              date: item.data_publicacao || formatNewsDate(item.created_at),
+              source: item.fonte || "Caveira Mix Oficial",
+              link: item.link || "https://caveira-mix.uk",
+            }));
+            if (statusEl) statusEl.textContent = `🟢 Portal Supabase Ativo (${parsedNews.length} matérias)`;
+          }
+        }
+      } catch (spErr) {
+        console.warn("[CaveiraMix] Erro ao carregar notícias do Supabase:", spErr.message);
+      }
+    }
+
+    // 2. Se não houver notícias no Supabase, consulta cache local se não for forçado
+    if (parsedNews.length === 0 && !force) {
       const cached = localStorage.getItem(NEWS_CACHE_KEY);
       const cachedTime = localStorage.getItem(NEWS_CACHE_TIME_KEY);
       if (cached && cachedTime && Date.now() - Number(cachedTime) < 15 * 60 * 1000) {
         liveRockNewsList = JSON.parse(cached);
         if (liveRockNewsList && liveRockNewsList.length > 0) {
-          if (statusEl) statusEl.textContent = `🟢 World News / Feed Rock & Metal (${liveRockNewsList.length} notícias)`;
+          if (statusEl) statusEl.textContent = `🟢 Feed Rock & Metal (${liveRockNewsList.length} notícias)`;
           renderNews(currentNewsFilter);
           if (refreshIcon) refreshIcon.classList.remove("spinning");
           return;
@@ -525,11 +564,10 @@ async function fetchLiveRockNews(force = false) {
       }
     }
 
-    let parsedNews = [];
     const worldNewsKey = window.CAVEIRA_CONFIG?.WORLD_NEWS_API_KEY;
 
-    // 2. Tenta World News API (se a chave de API estiver preenchida)
-    if (worldNewsKey) {
+    // 3. Fallback: World News API (se Supabase não retornou dados)
+    if (parsedNews.length === 0 && worldNewsKey) {
       try {
         const query = '(rock OR metal OR "heavy metal" OR "hard rock" OR "thrash metal" OR "death metal" OR "rock nacional" OR "punk rock" OR "grunge") AND (band OR banda OR musica OR música OR album OR álbum OR show OR tour OR guitar OR vocalista OR festival)';
         const wnUrl = `https://api.worldnewsapi.com/search-news?api-key=${encodeURIComponent(worldNewsKey)}&text=${encodeURIComponent(query)}&language=pt,en&sort=publish-time&sort-direction=DESC&number=25`;

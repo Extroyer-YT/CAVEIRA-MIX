@@ -79,6 +79,7 @@ window.CAVEIRA_CONFIG = {
   SUPABASE_TABLE_COMMENTS:       "comentarios_mural",
   SUPABASE_TABLE_COMMENTS_LIKES: "comentarios_likes",
   SUPABASE_TABLE_PODCASTS:       "podcasts",
+  SUPABASE_TABLE_NEWS:           "noticias",
 
   // --- Contato de patrocínio ---
   SPONSOR_CONTACT_URL: "https://wa.me/?text=Olá!%20Gostaria%20de%20anunciar%20na%20Caveira%20Mix",
