@@ -5,12 +5,12 @@
 (function () {
   const CFG = window.CAVEIRA_CONFIG || {};
 
-  // Sessão anônima única por aba/navegador (sem rastreamento de dados pessoais)
-  const SESSION_KEY = "cav_map_session_v1";
-  let sessionId = sessionStorage.getItem(SESSION_KEY);
+  // Identificador único e persistente por navegador (reutilizado em F5/recarregamento para não duplicar ouvintes)
+  const SESSION_KEY = "cav_map_client_v2";
+  let sessionId = localStorage.getItem(SESSION_KEY);
   if (!sessionId) {
     sessionId = "cav_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now().toString(36);
-    sessionStorage.setItem(SESSION_KEY, sessionId);
+    localStorage.setItem(SESSION_KEY, sessionId);
   }
 
   // Centros metropolitanos base (para agrupamento e fallback inteligente com rádio ao vivo)
@@ -290,15 +290,19 @@
      ============================================================ */
   function groupListeners(rawListeners) {
     const realGroups = new Map();
+    const hasSupabaseData = Array.isArray(rawListeners);
 
-    // 1. Ouvintes reais do Supabase
-    if (Array.isArray(rawListeners) && rawListeners.length > 0) {
+    // 1. Ouvintes reais vindos do Supabase
+    if (hasSupabaseData && rawListeners.length > 0) {
       rawListeners.forEach((item) => {
         if (!item.cidade || !item.pais) return;
         const cityKey = `${item.cidade.toLowerCase().trim()}_${(item.codigo_pais || "").toLowerCase().trim()}`;
+        const isThisUser = item.session_id === sessionId;
         const existing = realGroups.get(cityKey);
+        
         if (existing) {
           existing.count += 1;
+          if (isThisUser) existing.hasUser = true;
         } else {
           const knownKey = Object.keys(KNOWN_METRO_HUBS).find((k) =>
             k.startsWith(
@@ -320,47 +324,42 @@
             lng: parseFloat(item.lng),
             count: 1,
             real: true,
+            hasUser: isThisUser,
             vibe: knownHub ? knownHub.vibe : "Rock & Metal",
           });
         }
       });
     }
 
-    // 2. Próprio usuário (sempre real)
-    if (localUserLocation) {
+    // 2. Fallback: Se o Supabase estiver indisponível ou vazio, adiciona apenas o usuário local
+    if (realGroups.size === 0 && localUserLocation) {
       const userKey = `${localUserLocation.city.toLowerCase().trim()}_${localUserLocation.countryCode.toLowerCase().trim()}`;
-      if (realGroups.has(userKey)) {
-        realGroups.get(userKey).hasUser = true;
-      } else {
-        const knownKey = Object.keys(KNOWN_METRO_HUBS).find((k) =>
-          k.startsWith(
-            localUserLocation.city
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .replace(/\s+/g, " ")
-              .trim()
-          )
-        );
-        const knownHub = knownKey ? KNOWN_METRO_HUBS[knownKey] : null;
-        realGroups.set(userKey, {
-          city: localUserLocation.city,
-          state: localUserLocation.state || "",
-          country: localUserLocation.country,
-          flag: localUserLocation.flag,
-          lat: localUserLocation.lat,
-          lng: localUserLocation.lng,
-          count: 1,
-          real: true,
-          hasUser: true,
-          vibe: knownHub ? knownHub.vibe : "Rock & Metal",
-        });
-      }
+      const knownKey = Object.keys(KNOWN_METRO_HUBS).find((k) =>
+        k.startsWith(
+          localUserLocation.city
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+        )
+      );
+      const knownHub = knownKey ? KNOWN_METRO_HUBS[knownKey] : null;
+      realGroups.set(userKey, {
+        city: localUserLocation.city,
+        state: localUserLocation.state || "",
+        country: localUserLocation.country,
+        flag: localUserLocation.flag,
+        lat: localUserLocation.lat,
+        lng: localUserLocation.lng,
+        count: 1,
+        real: true,
+        hasUser: true,
+        vibe: knownHub ? knownHub.vibe : "Rock & Metal",
+      });
     }
 
     const realArray = Array.from(realGroups.values());
-
-    // SEM hubs decorativos — apenas pontos reais no mapa
     return { real: realArray, decorative: [] };
   }
 
