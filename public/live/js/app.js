@@ -1085,6 +1085,62 @@ function setupShare() {
   $("qrcode").src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&bgcolor=ffffff&color=000000&data=${encodeURIComponent(CFG.QR_TARGET)}`;
   const pf = $("playlist-finder-link");
   if (pf) pf.href = CFG.PLAYLIST_FINDER_URL || "https://discography-finder.ai.studio/";
+
+  // Botões de cópia direta (VLC, Winamp Classic, etc.)
+  document.querySelectorAll("[data-copy-url]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const urlToCopy = btn.getAttribute("data-copy-url");
+      const label = btn.getAttribute("data-copy-label") || "Link";
+
+      let copiedSuccessfully = false;
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(urlToCopy);
+          copiedSuccessfully = true;
+        } catch (err) {
+          copiedSuccessfully = false;
+        }
+      }
+
+      if (!copiedSuccessfully) {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = urlToCopy;
+          ta.style.position = "fixed";
+          ta.style.top = "-9999px";
+          ta.style.left = "-9999px";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          copiedSuccessfully = document.execCommand("copy");
+          ta.remove();
+        } catch (err) {
+          copiedSuccessfully = false;
+        }
+      }
+
+      if (copiedSuccessfully) {
+        const originalHtml = btn.innerHTML;
+        btn.classList.add("copied");
+        btn.innerHTML = `<span class="share-ico">✅</span><span class="share-name">Copiado!</span>`;
+        if (typeof window.showToast === "function") {
+          window.showToast(`Link do ${label} copiado: ${urlToCopy} 🤘`, "success");
+        }
+        setTimeout(() => {
+          btn.classList.remove("copied");
+          btn.innerHTML = originalHtml;
+        }, 2200);
+      } else {
+        if (typeof window.showToast === "function") {
+          window.showToast(`Não foi possível copiar automaticamente. URL: ${urlToCopy}`, "error");
+        } else {
+          prompt("Copie o link abaixo:", urlToCopy);
+        }
+      }
+    });
+  });
 }
 
 /* ============================================================

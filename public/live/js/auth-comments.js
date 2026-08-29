@@ -119,6 +119,7 @@
       setTimeout(() => toast.remove(), 400);
     }, 4000);
   }
+  window.showToast = showToast;
 
   // 4. Carrega a Sessão do Usuário
   async function checkAuthSession() {

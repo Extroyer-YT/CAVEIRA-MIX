@@ -1443,6 +1443,16 @@ body {
 .share-btn.x { background: #000; }
 .share-btn.ig { background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); }
 .share-btn.yt { background: #ff0000; }
+.share-btn.vlc { background: linear-gradient(135deg, #ff7a00, #d35400); }
+.share-btn.vlc:hover { box-shadow: 0 0 20px rgba(255, 122, 0, 0.6), inset 0 0 20px rgba(255, 122, 0, 0.2) !important; }
+.share-btn.winamp { background: linear-gradient(135deg, #f59e0b, #059669); }
+.share-btn.winamp:hover { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(245, 158, 11, 0.2) !important; }
+button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); cursor: pointer; outline: none; }
+.share-btn.copied {
+  background: linear-gradient(135deg, #10b981, #047857) !important;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.85), inset 0 0 20px rgba(16, 185, 129, 0.4) !important;
+  transform: scale(1.04);
+}
 
 /* ============================ FOOTER ============================ */
 .site-footer {
