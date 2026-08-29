@@ -687,20 +687,19 @@
 
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    // Tiles Dark com camada ultra estável e fallback sem bloqueio de API Key
-    const primaryTileUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-    const tileLayer = L.tileLayer(primaryTileUrl, {
-      subdomains: "abcd",
-      maxZoom: 19,
-      errorTileUrl: "https://tile.openstreetmap.org/0/0/0.png",
+    // Tiles Dark 100% livres e sem exigência de API Key ou Tokens (Esri Dark Canvas + OSM Dark)
+    const darkTileUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+    const tileLayer = L.tileLayer(darkTileUrl, {
+      maxZoom: 16,
+      minZoom: 2,
+      attribution: "",
     }).addTo(map);
 
-    // Se houver qualquer erro de carregamento em tiles, faz fallback transparente
-    tileLayer.on("tileerror", function (error) {
-      if (!tileLayer._hasFallenBack) {
-        tileLayer._hasFallenBack = true;
-        console.warn("[CaveiraMix] Alternando provedor de mapa para Stadia/OSM fallback...");
-        tileLayer.setUrl("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png");
+    // Fallback garantido se algum bloco falhar
+    tileLayer.on("tileerror", function () {
+      if (!tileLayer._fallbackApplied) {
+        tileLayer._fallbackApplied = true;
+        tileLayer.setUrl("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}.png");
       }
     });
 
