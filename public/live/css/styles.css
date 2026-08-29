@@ -2439,6 +2439,23 @@ body { overflow-x: clip; }
   transform: translateY(-2px);
 }
 
+.nav-link-podcasts {
+  position: relative;
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.12), rgba(20, 20, 28, 0.6)) !important;
+  border: 1px solid rgba(0, 255, 255, 0.35) !important;
+  border-radius: 10px !important;
+  color: #00ffff !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.15);
+  transition: all 0.25s ease;
+}
+.nav-link-podcasts:hover {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 180, 216, 0.4)) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5) !important;
+  border-color: #00ffff !important;
+  color: #fff !important;
+  transform: translateY(-2px);
+}
+
 .sticky-player {
   position: fixed;
   bottom: -110px;

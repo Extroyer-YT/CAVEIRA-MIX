@@ -120,6 +120,11 @@
      2. RENDERIZAÇÃO DA GRADE DE EPISÓDIOS
      ============================================================ */
   function renderPodcasts(items) {
+    const totalCountBadge = document.getElementById("total-episodes-count");
+    if (totalCountBadge) {
+      totalCountBadge.textContent = podcastList.length;
+    }
+
     if (!listContainer) return;
     listContainer.innerHTML = "";
 
@@ -235,6 +240,31 @@
     if (playerHost) playerHost.textContent = `🎙️ ${pod.host || "Caveira Mix"} • EP #${pod.episodio_numero || ""}`;
     if (playerCover) playerCover.src = pod.capa_url || "/live/assets/logo.png";
     if (btnPlayPause) btnPlayPause.textContent = isPodcastPlaying ? "⏸" : "▶";
+
+    const epTag = document.getElementById("pod-player-ep-tag");
+    if (epTag) epTag.textContent = `EP #${pod.episodio_numero || "00"}`;
+
+    const statusTag = document.getElementById("pod-playing-status-tag");
+    if (statusTag) statusTag.textContent = isPodcastPlaying ? "TOCANDO AGORA 🔊" : "PAUSADO";
+  }
+
+  // Busca em tempo real de episódios
+  const searchInput = document.getElementById("podcast-search-input");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        renderPodcasts(podcastList);
+        return;
+      }
+      const filtered = podcastList.filter(
+        (p) =>
+          (p.titulo || "").toLowerCase().includes(q) ||
+          (p.descricao || "").toLowerCase().includes(q) ||
+          (p.host || "").toLowerCase().includes(q)
+      );
+      renderPodcasts(filtered);
+    });
   }
 
   /* ============================================================

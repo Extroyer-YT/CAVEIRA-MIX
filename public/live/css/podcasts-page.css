@@ -1,0 +1,409 @@
+/* ============================================================
+   Caveira Cast — Estilos Exclusivos da Página de Podcasts (podcasts.html)
+   ============================================================ */
+
+/* --- HEADER DO PORTAL --- */
+.podcasts-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  padding: 1rem 2rem;
+  background: rgba(10, 10, 12, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-wrap: wrap;
+}
+
+.pod-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  text-decoration: none;
+  color: var(--white);
+}
+
+.pod-portal-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--red-glow);
+  letter-spacing: 1.5px;
+}
+
+.pod-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.btn-add-pod-top {
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.25), rgba(20, 20, 24, 0.9));
+  border: 1px solid var(--red-glow);
+  color: #fff;
+  padding: 0.55rem 1.1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.84rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.25);
+}
+
+.btn-add-pod-top:hover {
+  background: var(--red);
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(229, 9, 20, 0.6);
+}
+
+/* --- LAYOUT PRINCIPAL --- */
+.pod-main-layout {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.8rem;
+}
+
+/* --- HERO --- */
+.pod-hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  padding-top: 1rem;
+}
+
+.pod-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  background: rgba(229, 9, 20, 0.15);
+  border: 1px solid rgba(229, 9, 20, 0.4);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #ff8b95;
+}
+
+.pod-hero-title {
+  font-size: 3.2rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-shadow: 0 0 35px rgba(229, 9, 20, 0.6);
+  background: linear-gradient(180deg, #ffffff 40%, #ff8b95 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pod-hero-sub {
+  max-width: 760px;
+  font-size: 1.05rem;
+  color: var(--grey);
+  line-height: 1.6;
+}
+
+/* Barra de Estatísticas */
+.pod-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  padding: 1.1rem 2.5rem;
+  margin-top: 0.8rem;
+  border-radius: 20px;
+}
+
+.pod-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.pod-stat-num {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--red-glow);
+  font-family: monospace;
+}
+
+.pod-stat-label {
+  font-size: 0.75rem;
+  color: var(--grey);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pod-stat-divider {
+  width: 1px;
+  height: 35px;
+  background: var(--glass-border);
+}
+
+/* --- PLAYER PRINCIPAL DESTACADO NO TOPO --- */
+.pod-player-featured-section {
+  padding: 1.8rem 2.2rem;
+  border-radius: 24px;
+  border: 1px solid rgba(229, 9, 20, 0.45);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(229, 9, 20, 0.1);
+  background: linear-gradient(135deg, rgba(28, 28, 35, 0.95), rgba(15, 15, 18, 0.98));
+}
+
+.pod-featured-player-grid {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.pod-player-cover-box {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  flex-shrink: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.pod-player-large-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pod-player-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pod-player-header-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pod-playing-status-tag {
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: var(--red-glow);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.pod-ep-tag {
+  font-size: 0.7rem;
+  font-family: monospace;
+  background: rgba(0, 255, 255, 0.12);
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.pod-player-headline {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.pod-player-subinfo {
+  font-size: 0.85rem;
+  color: var(--grey);
+}
+
+.pod-ctrls-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn-main-pod-play {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 20px rgba(229, 9, 20, 0.6);
+  flex-shrink: 0;
+}
+
+.btn-main-pod-play:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 30px rgba(229, 9, 20, 0.9);
+}
+
+.pod-progress-wrapper {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pod-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--grey);
+  font-family: monospace;
+}
+
+.pod-quality-badge {
+  font-size: 0.68rem;
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.pod-seek-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.pod-seek-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--red), var(--red-glow));
+  border-radius: 6px;
+  transition: width 0.1s linear;
+}
+
+.pod-extra-ctrls {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-shrink: 0;
+}
+
+.btn-pod-speed {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--white);
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pod-speed:hover {
+  border-color: var(--red-glow);
+  background: rgba(229, 9, 20, 0.2);
+}
+
+.pod-volume-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pod-volume-box input[type="range"] {
+  width: 80px;
+  accent-color: var(--red);
+  cursor: pointer;
+}
+
+/* --- CATÁLOGO DE EPISÓDIOS --- */
+.pod-catalog-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pod-catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pod-catalog-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.pod-catalog-sub {
+  font-size: 0.85rem;
+  color: var(--grey);
+}
+
+.pod-search-input {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  padding: 0.65rem 1.2rem;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.88rem;
+  outline: none;
+  min-width: 280px;
+  transition: all 0.2s ease;
+}
+
+.pod-search-input:focus {
+  border-color: var(--red-glow);
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.3);
+}
+
+/* Responsividade da Página de Podcasts */
+@media (max-width: 900px) {
+  .pod-featured-player-grid {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .pod-player-cover-box {
+    margin: 0 auto;
+  }
+  .pod-player-header-tags {
+    justify-content: center;
+  }
+  .pod-ctrls-row {
+    flex-direction: column;
+  }
+  .pod-hero-title {
+    font-size: 2.2rem;
+  }
+  .pod-stats-bar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .pod-stat-divider {
+    display: none;
+  }
+}

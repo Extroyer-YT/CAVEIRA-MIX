@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caveira Cast — Podcasts Oficiais de Rock & Heavy Metal | Caveira Mix</title>
+  <meta name="description" content="Ouça os episódios exclusivos do Caveira Cast. Histórias secretas do Heavy Metal, debates, bastidores de festivais e o melhor do Underground." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="author" content="Caveira Mix" />
+  <link rel="canonical" href="https://caveira-mix.uk/live/podcasts.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="music.radio_station" />
+  <meta property="og:title" content="Caveira Cast — O Podcast do Rock & Metal" />
+  <meta property="og:description" content="Episódios completos com entrevistas, histórias de turnês e debate underground." />
+  <meta property="og:image" content="/live/assets/logo.png" />
+
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/live/assets/logo.png" />
+  <link rel="stylesheet" href="/live/css/styles.css" />
+  <link rel="stylesheet" href="/live/css/podcasts-page.css" />
+</head>
+<body>
+  <!-- Fundo dinâmico da rádio -->
+  <div class="bg-layer" aria-hidden="true"></div>
+
+  <!-- Header do Portal de Podcasts -->
+  <header class="podcasts-page-header">
+    <a href="/live/index.html" class="pod-brand-wrap" title="Ir para a página principal">
+      <img src="/live/assets/logo.png" alt="Logo Caveira Mix" class="brand-logo" width="48" height="48" />
+      <div class="brand-text">
+        <span class="brand-name">CAVEIRA MIX</span>
+        <span class="pod-portal-tag">CAVEIRA CAST 🎙️</span>
+      </div>
+    </a>
+
+    <!-- Mini Streamer ao Vivo para continuar ouvindo a rádio -->
+    <div class="header-stream-bar" title="Ouvindo Caveira Mix Ao Vivo">
+      <button class="btn-header-play" id="btn-header-play" aria-label="Tocar ou Pausar Rádio Ao Vivo">▶</button>
+      <div class="header-stream-info">
+        <span class="header-stream-title" id="header-stream-title">Caveira Mix Ao Vivo</span>
+        <span class="header-stream-artist" id="header-stream-artist">Rock • Metal 24h</span>
+      </div>
+      <audio id="header-audio" preload="none"></audio>
+    </div>
+
+    <!-- Navegação de Atalhos -->
+    <div class="pod-header-actions">
+      <button type="button" class="btn-add-pod-top" id="btn-open-add-podcast">
+        <span>➕ Publicar Episódio</span>
+      </button>
+      <a href="/live/index.html" class="btn-back-radio">
+        <span>📻</span> Player da Rádio
+      </a>
+    </div>
+  </header>
+
+  <main class="pod-main-layout">
+    <!-- HERO DO CAVEIRA CAST -->
+    <section class="pod-hero">
+      <div class="pod-hero-badge"><span class="pulse-dot"></span> PODCAST OFICIAL CAVEIRA MIX</div>
+      <h1 class="pod-hero-title">CAVEIRA CAST</h1>
+      <p class="pod-hero-sub">
+        Mergulhe fundo nos bastidores da música pesada. Entrevistas explosivas, debates sem filtro, a história oculta do Rock e os maiores clássicos do Metal mundial.
+      </p>
+
+      <!-- Estatísticas Rápidas -->
+      <div class="pod-stats-bar glass">
+        <div class="pod-stat-item">
+          <span class="pod-stat-num" id="total-episodes-count">0</span>
+          <span class="pod-stat-label">Episódios no Ar</span>
+        </div>
+        <div class="pod-stat-divider"></div>
+        <div class="pod-stat-item">
+          <span class="pod-stat-num">100%</span>
+          <span class="pod-stat-label">Rock & Metal</span>
+        </div>
+        <div class="pod-stat-divider"></div>
+        <div class="pod-stat-item">
+          <span class="pod-stat-num">HD</span>
+          <span class="pod-stat-label">Áudio de Alta Qualidade</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAYER PRINCIPAL FIXO / DESTACADO NO TOPO -->
+    <section class="pod-player-featured-section glass" id="podcast-player-bar">
+      <div class="pod-featured-player-grid">
+        <div class="pod-player-cover-box">
+          <img id="podcast-player-cover" src="/live/assets/logo.png" alt="Capa do Episódio" class="pod-player-large-cover" />
+          <div class="pod-pulse-circle"></div>
+        </div>
+
+        <div class="pod-player-main-content">
+          <div class="pod-player-header-tags">
+            <span class="pod-playing-status-tag" id="pod-playing-status-tag">SELECIONE UM EPISÓDIO</span>
+            <span class="pod-ep-tag" id="pod-player-ep-tag">EP #--</span>
+          </div>
+
+          <h2 id="podcast-player-title" class="pod-player-headline">Escolha um episódio abaixo para começar a ouvir 🤘</h2>
+          <p id="podcast-player-host" class="pod-player-subinfo">🎙️ Apresentado por Caveira Mix</p>
+
+          <!-- Controles de Reprodução -->
+          <div class="pod-ctrls-row">
+            <button class="btn-main-pod-play" id="podcast-player-play-btn" aria-label="Tocar / Pausar">▶</button>
+            
+            <div class="pod-progress-wrapper">
+              <div class="pod-time-row">
+                <span id="podcast-player-time" class="pod-timestamp">00:00 / 00:00</span>
+                <span class="pod-quality-badge">320kbps MP3</span>
+              </div>
+              <div class="pod-seek-bar" id="podcast-progress-bar">
+                <div class="pod-seek-fill" id="podcast-progress-fill"></div>
+              </div>
+            </div>
+
+            <div class="pod-extra-ctrls">
+              <button class="btn-pod-speed" id="podcast-speed-btn" title="Velocidade de reprodução">1x</button>
+              <div class="pod-volume-box">
+                <span>🔊</span>
+                <input type="range" min="0" max="100" value="90" id="podcast-volume" aria-label="Volume" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LISTAGEM DE TODOS OS EPISÓDIOS -->
+    <section class="pod-catalog-section">
+      <div class="pod-catalog-header">
+        <div>
+          <h3 class="pod-catalog-title">🎧 Todos os Episódios</h3>
+          <p class="pod-catalog-sub">Escolha uma faixa para tocar imediatamente no player oficial.</p>
+        </div>
+        <div class="pod-search-wrap">
+          <input type="text" id="podcast-search-input" placeholder="🔍 Buscar episódio ou assunto..." class="pod-search-input" />
+        </div>
+      </div>
+
+      <div class="podcast-grid" id="podcast-list-container">
+        <!-- Preenchido via podcasts.js -->
+        <div class="comments-loading-skeleton">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DE ADICIONAR NOVO EPISÓDIO -->
+  <div class="auth-modal-backdrop" id="modal-add-podcast" aria-hidden="true" role="dialog">
+    <div class="auth-modal-card glass">
+      <button class="close-auth-modal" id="btn-close-add-podcast" aria-label="Fechar Modal">&times;</button>
+      
+      <div class="auth-modal-header">
+        <div class="auth-modal-logo">🎙️</div>
+        <h3 class="auth-modal-title">Novo Episódio — Caveira Cast</h3>
+        <p class="auth-modal-sub">Adicione um novo episódio de podcast para os ouvintes da Caveira Mix escutarem no site.</p>
+      </div>
+
+      <form id="form-add-podcast" class="auth-form">
+        <div class="auth-field">
+          <label for="add-pod-titulo">Título do Episódio *</label>
+          <input type="text" id="add-pod-titulo" placeholder="Ex: Caveira Cast #04 — Especial Rock Clássico" required />
+        </div>
+
+        <div class="form-row-2col">
+          <div class="auth-field">
+            <label for="add-pod-host">Apresentador / Host</label>
+            <input type="text" id="add-pod-host" placeholder="Ex: Beto Caveira" value="Caveira Mix" />
+          </div>
+          <div class="auth-field">
+            <label for="add-pod-ep">Número do Episódio</label>
+            <input type="number" id="add-pod-ep" placeholder="4" min="1" value="1" />
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="add-pod-audio">Link do Áudio (MP3 / Stream) *</label>
+          <input type="url" id="add-pod-audio" placeholder="https://seusite.com/audio.mp3 ou link público" required />
+        </div>
+
+        <div class="form-row-2col">
+          <div class="auth-field">
+            <label for="add-pod-capa">URL da Imagem de Capa</label>
+            <input type="url" id="add-pod-capa" placeholder="/live/assets/logo.png ou link de imagem" />
+          </div>
+          <div class="auth-field">
+            <label for="add-pod-duracao">Duração Estimada</label>
+            <input type="text" id="add-pod-duracao" placeholder="Ex: 42:15" value="35:00" />
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="add-pod-desc">Descrição / Resumo do Episódio</label>
+          <textarea id="add-pod-desc" rows="3" placeholder="Conte do que se trata este episódio..."></textarea>
+        </div>
+
+        <div class="auth-field-checkbox">
+          <label>
+            <input type="checkbox" id="add-pod-destaque" />
+            <span>Colocar este episódio como <strong>🔥 DESTAQUE</strong> no topo</span>
+          </label>
+        </div>
+
+        <p class="auth-error-msg" id="add-podcast-msg"></p>
+        <button type="submit" class="btn-auth-submit" id="btn-submit-add-podcast">Salvar e Publicar Episódio 🤘</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <img src="/live/assets/logo.png" alt="Caveira Mix" width="40" height="40" />
+    <p>© <span id="year"></span> Caveira Mix — Podcasts Oficiais de Rock & Metal. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="/live/js/config.js"></script>
+  <script src="/live/js/podcasts.js"></script>
+  <script>
+    // Header Mini Player de Rádio ao vivo
+    (function () {
+      const headerAudio = document.getElementById("header-audio");
+      const btnHeaderPlay = document.getElementById("btn-header-play");
+      const CFG = window.CAVEIRA_CONFIG || {};
+      let isLivePlaying = false;
+
+      if (btnHeaderPlay && headerAudio) {
+        btnHeaderPlay.addEventListener("click", () => {
+          if (!isLivePlaying) {
+            headerAudio.src = CFG.STREAM_URL || "https://caveira-mix.uk/listen/caveira_mix/radio.mp3";
+            headerAudio.play().then(() => {
+              isLivePlaying = true;
+              btnHeaderPlay.textContent = "⏸";
+              btnHeaderPlay.classList.add("playing");
+            }).catch(() => {});
+          } else {
+            headerAudio.pause();
+            isLivePlaying = false;
+            btnHeaderPlay.textContent = "▶";
+            btnHeaderPlay.classList.remove("playing");
+          }
+        });
+      }
+      document.getElementById("year").textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>
