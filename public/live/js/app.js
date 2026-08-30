@@ -22,19 +22,181 @@ let isPlaying = false;
 let lastTrackKey = "";
 
 /* ============================================================
-   PLAYER (MP3 + suporte HLS)
+   LIVE STREAM MANAGER
+   Resolve: atraso progressivo, cortes/engasgos, desync após suspensão
    ============================================================ */
-function setupStream() {
+const LIVE_LAG_THRESHOLD_SEC = 8;   // segundos de atraso antes de forçar ressincronização
+const LIVE_LAG_CHECK_MS     = 5000; // intervalo de checagem de latência
+const LIVE_STALL_TIMEOUT_MS = 8000; // ms sem progresso antes de reconectar
+const LIVE_ERROR_RETRY_MS   = 3000; // ms antes de retentar após erro
+const LIVE_MAX_RETRIES       = 5;   // tentativas antes de desistir
+
+let lsmRetries       = 0;
+let lsmStallTimer    = null;
+let lsmLagTimer      = null;
+let lsmReconnecting  = false;
+let lsmLastTime      = 0;
+let lsmLastTimeTs    = 0;
+
+/** Cria (ou recria) o src do stream, descarregando todo o buffer anterior */
+function lsmLoadSource() {
   const url = CFG.STREAM_URL;
   if (url.endsWith(".m3u8") && window.Hls && window.Hls.isSupported()) {
-    const hls = new window.Hls();
+    // Para HLS, destrói a instância antiga e cria uma nova
+    if (window.__lsmHls) { try { window.__lsmHls.destroy(); } catch(_) {} }
+    const hls = new window.Hls({
+      lowLatencyMode: true,
+      backBufferLength: 4,         // descartar buffer atrás
+      maxBufferLength: 10,         // nunca acumular mais que 10 s
+      maxMaxBufferLength: 20,
+    });
+    window.__lsmHls = hls;
     hls.loadSource(url);
     hls.attachMedia(audio);
   } else {
-    audio.src = url;
+    // MP3/AAC: força flush completo do buffer nativo
+    const savedVol = audio.volume;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    // Adiciona cache-buster para evitar que o browser devolva bytes cacheados
+    audio.src = url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now();
+    audio.volume = savedVol;
+    audio.load();
   }
 }
 
+function lsmSetStatus(msg) {
+  if (elStatus) elStatus.textContent = msg;
+}
+
+function lsmClearStallTimer() {
+  if (lsmStallTimer) { clearTimeout(lsmStallTimer); lsmStallTimer = null; }
+}
+
+function lsmArmStallTimer() {
+  lsmClearStallTimer();
+  lsmStallTimer = setTimeout(() => {
+    if (isPlaying) {
+      lsmSetStatus("Reconectando…");
+      lsmReconnect();
+    }
+  }, LIVE_STALL_TIMEOUT_MS);
+}
+
+async function lsmReconnect() {
+  if (lsmReconnecting) return;
+  if (lsmRetries >= LIVE_MAX_RETRIES) {
+    lsmSetStatus("⚠️ Sem sinal. Recarregue a página.");
+    return;
+  }
+  lsmReconnecting = true;
+  lsmRetries++;
+  lsmClearStallTimer();
+  lsmSetStatus(`Reconectando… (${lsmRetries}/${LIVE_MAX_RETRIES})`);
+
+  try {
+    lsmLoadSource();
+    await new Promise(r => setTimeout(r, LIVE_ERROR_RETRY_MS));
+    await audio.play();
+    lsmRetries = 0;
+    lsmReconnecting = false;
+    lsmSetStatus("");
+    vmu.ensureInit(audio);
+  } catch(_) {
+    lsmReconnecting = false;
+    if (isPlaying) setTimeout(lsmReconnect, LIVE_ERROR_RETRY_MS);
+  }
+}
+
+/** Verifica latência em relação ao ponto mais à frente do buffer e corrige */
+function lsmCheckLag() {
+  if (!isPlaying || audio.readyState < 2) return;
+  try {
+    const sb = audio.seekable;
+    if (sb && sb.length > 0) {
+      const liveEdge = sb.end(sb.length - 1);
+      const lag = liveEdge - audio.currentTime;
+      if (lag > LIVE_LAG_THRESHOLD_SEC) {
+        // Tenta pular para a borda ao vivo (mais eficiente que reconectar)
+        audio.currentTime = liveEdge - 0.5;
+        lsmSetStatus("");
+      }
+    }
+  } catch(_) {}
+}
+
+function lsmStartLagWatcher() {
+  if (lsmLagTimer) clearInterval(lsmLagTimer);
+  lsmLagTimer = setInterval(lsmCheckLag, LIVE_LAG_CHECK_MS);
+}
+function lsmStopLagWatcher() {
+  if (lsmLagTimer) { clearInterval(lsmLagTimer); lsmLagTimer = null; }
+}
+
+/* ---- Eventos do elemento <audio> ---- */
+audio.addEventListener("playing", () => {
+  lsmSetStatus("");
+  lsmRetries = 0;
+  lsmReconnecting = false;
+  lsmClearStallTimer();
+  lsmLastTime = audio.currentTime;
+  lsmLastTimeTs = Date.now();
+});
+
+audio.addEventListener("waiting", () => {
+  if (isPlaying) lsmArmStallTimer();
+});
+
+audio.addEventListener("stalled", () => {
+  if (isPlaying) {
+    lsmSetStatus("Bufferizando…");
+    lsmArmStallTimer();
+  }
+});
+
+audio.addEventListener("error", () => {
+  if (isPlaying) {
+    lsmSetStatus("Reconectando…");
+    lsmReconnect();
+  }
+});
+
+// Detecta travamento de currentTime (stream congelado sem disparar stalled)
+audio.addEventListener("timeupdate", () => {
+  const now = Date.now();
+  if (audio.currentTime !== lsmLastTime) {
+    lsmLastTime = audio.currentTime;
+    lsmLastTimeTs = now;
+    lsmClearStallTimer();
+  } else if (isPlaying && (now - lsmLastTimeTs) > LIVE_STALL_TIMEOUT_MS) {
+    lsmArmStallTimer();
+  }
+});
+
+/* ---- Detecção de retorno do sleep / aba reativada ---- */
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && isPlaying) {
+    // Verifica quanto tempo a aba ficou oculta
+    const elapsed = Date.now() - lsmLastTimeTs;
+    if (elapsed > 4000) {
+      // O browser ficou parado; forçar re-sincronização com o ao vivo
+      lsmSetStatus("Sincronizando com o ao vivo…");
+      lsmLoadSource();
+      setTimeout(async () => {
+        try {
+          await audio.play();
+          lsmSetStatus("");
+          vmu.ensureInit(audio);
+        } catch(_) { lsmReconnect(); }
+      }, 500);
+    } else {
+      lsmCheckLag();
+    }
+  }
+});
+
+/* ---- API pública do player ---- */
 function updatePlayButtonUI() {
   btnPlay.textContent = isPlaying ? "⏸" : "▶";
   const stickyBtn = $("sticky-btn-play");
@@ -42,16 +204,19 @@ function updatePlayButtonUI() {
 }
 
 function play() {
-  if (!audio.src || audio.src === window.location.href) setupStream();
+  lsmRetries = 0;
+  lsmReconnecting = false;
+  if (!audio.src || audio.src === window.location.href) lsmLoadSource();
   audio.play().then(() => {
     isPlaying = true;
     updatePlayButtonUI();
     disc.classList.add("playing");
     equalizer.classList.add("active");
-    elStatus.textContent = "";
+    lsmSetStatus("");
+    lsmStartLagWatcher();
     vmu.ensureInit(audio);
   }).catch(() => {
-    elStatus.textContent = "Não foi possível iniciar. Toque no botão novamente.";
+    lsmSetStatus("Não foi possível iniciar. Toque no botão novamente.");
   });
 }
 
@@ -61,6 +226,8 @@ function pause() {
   updatePlayButtonUI();
   disc.classList.remove("playing");
   equalizer.classList.remove("active");
+  lsmStopLagWatcher();
+  lsmClearStallTimer();
 }
 
 btnPlay.addEventListener("click", () => (isPlaying ? pause() : play()));
@@ -92,10 +259,8 @@ if (stickyScrollTop) {
   });
 }
 
-audio.addEventListener("stalled", () => { if (isPlaying) elStatus.textContent = "Reconectando…"; });
-audio.addEventListener("playing", () => { elStatus.textContent = ""; });
-audio.addEventListener("error", () => { if (isPlaying) elStatus.textContent = "Sinal instável, tente novamente."; });
-setupStream();
+// Pré-carrega a URL sem iniciar reprodução (readyState fica em HAVE_NOTHING até play())
+lsmLoadSource();
 
 /* ============================================================
    VMU — Visual Music Unit (Web Audio + Canvas)
