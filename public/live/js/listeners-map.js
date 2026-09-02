@@ -680,7 +680,6 @@
       zoom: 2,
       minZoom: 2,
       maxZoom: 11,
-      preferCanvas: true,
       worldCopyJump: true,
       zoomControl: false,
       attributionControl: false,

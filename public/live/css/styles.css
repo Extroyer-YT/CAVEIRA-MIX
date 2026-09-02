@@ -47,26 +47,23 @@ body {
 /* --- Fundo dinâmico --- */
 .bg-layer {
   position: fixed; inset: 0; z-index: -3;
-  background: url("/live/assets/bg.jpg") center/cover no-repeat;
+  background: url("/live/assets/bg.jpg") center/cover no-repeat fixed;
   filter: brightness(0.5) saturate(1.1);
-  transform: translateZ(0);
-  will-change: transform;
 }
 .bg-layer::after {
   content: ""; position: absolute; inset: 0;
   background: radial-gradient(circle at 50% 0%, rgba(229, 9, 20, 0.18), transparent 55%),
               linear-gradient(180deg, rgba(10, 10, 10, 0.6), rgba(10, 10, 10, 0.95));
 }
-#particles { position: fixed; inset: 0; z-index: -2; pointer-events: none; transform: translateZ(0); }
+#particles { position: fixed; inset: 0; z-index: -2; pointer-events: none; }
 
 /* --- Glass --- */
 .glass {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
   border-radius: var(--radius);
-  transform: translateZ(0);
 }
 
 /* ============================ HEADER ============================ */
@@ -1738,12 +1735,13 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 .led-message-item.led-color-red {
   color: #ff2a3a;
   text-shadow:
-    0 0 4px #ff2a3a,
-    0 0 12px rgba(255, 0, 50, 0.7);
-  transform: translateZ(0);
+    0 0 2px #ff2a3a,
+    0 0 8px rgba(255, 0, 50, 0.85),
+    0 0 16px rgba(255, 0, 50, 0.55),
+    0 0 30px rgba(255, 0, 50, 0.25);
 }
 .led-theme-red {
-  box-shadow: inset 0 0 15px rgba(255, 0, 50, 0.15);
+  box-shadow: inset 0 0 25px rgba(255, 0, 50, 0.15);
 }
 
 /* 2. Âmbar (Show / Metrô) */
@@ -1751,12 +1749,13 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 .led-message-item.led-color-amber {
   color: #ffb700;
   text-shadow:
-    0 0 4px #ffb700,
-    0 0 12px rgba(255, 183, 0, 0.7);
-  transform: translateZ(0);
+    0 0 2px #ffb700,
+    0 0 8px rgba(255, 183, 0, 0.85),
+    0 0 16px rgba(255, 183, 0, 0.55),
+    0 0 30px rgba(255, 183, 0, 0.25);
 }
 .led-theme-amber {
-  box-shadow: inset 0 0 15px rgba(255, 183, 0, 0.15);
+  box-shadow: inset 0 0 25px rgba(255, 183, 0, 0.15);
 }
 
 /* 3. Verde (Estúdio / Retro) */
@@ -1764,12 +1763,13 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 .led-message-item.led-color-green {
   color: #00ff66;
   text-shadow:
-    0 0 4px #00ff66,
-    0 0 12px rgba(0, 255, 102, 0.7);
-  transform: translateZ(0);
+    0 0 2px #00ff66,
+    0 0 8px rgba(0, 255, 102, 0.85),
+    0 0 16px rgba(0, 255, 102, 0.55),
+    0 0 30px rgba(0, 255, 102, 0.25);
 }
 .led-theme-green {
-  box-shadow: inset 0 0 15px rgba(0, 255, 102, 0.15);
+  box-shadow: inset 0 0 25px rgba(0, 255, 102, 0.15);
 }
 
 /* 4. Ciano (Cyberpunk) */
@@ -1777,12 +1777,13 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 .led-message-item.led-color-cyan {
   color: #00ffff;
   text-shadow:
-    0 0 4px #00ffff,
-    0 0 12px rgba(0, 255, 255, 0.7);
-  transform: translateZ(0);
+    0 0 2px #00ffff,
+    0 0 8px rgba(0, 255, 255, 0.85),
+    0 0 16px rgba(0, 255, 255, 0.55),
+    0 0 30px rgba(0, 255, 255, 0.25);
 }
 .led-theme-cyan {
-  box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.15);
+  box-shadow: inset 0 0 25px rgba(0, 255, 255, 0.15);
 }
 
 @media (max-width: 640px) {

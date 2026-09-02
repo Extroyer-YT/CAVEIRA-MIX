@@ -268,24 +268,19 @@ lsmLoadSource();
 class RadioVMU {
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas ? canvas.getContext("2d", { alpha: true, desynchronized: true }) : null;
-    this.bars = 48;
+    this.ctx = canvas.getContext("2d");
+    this.bars = 64;
     this.colors = ["#ff0040", "#ff00ff", "#00ffff", "#00ff41", "#ffff00"];
     this.initialized = false;
     this.data = null;
-    this.lastFrameTime = 0;
-    this.fpsInterval = 1000 / 30; // 30 FPS estáveis para economizar GPU/CPU no desktop
-    if (this.canvas) {
-      this.resize();
-      addEventListener("resize", () => this.resize(), { passive: true });
-      this.animate();
-    }
+    this.resize();
+    addEventListener("resize", () => this.resize());
+    this.animate();
   }
   resize() {
-    if (!this.canvas) return;
     const r = this.canvas.getBoundingClientRect();
-    this.canvas.width = Math.max(200, Math.floor(r.width));
-    this.canvas.height = Math.max(60, Math.floor(r.height));
+    this.canvas.width = Math.max(200, r.width);
+    this.canvas.height = Math.max(60, r.height);
   }
   ensureInit(audioEl) {
     if (this.initialized) {
@@ -315,33 +310,24 @@ class RadioVMU {
       this.analyser.connect(this.audioCtx.destination);
       this.initialized = true;
     } catch (e) {
+      // CORS ou navegador incompatível — mantém animação idle
       this.initialized = "fallback";
     }
   }
-  animate(now = 0) {
-    requestAnimationFrame((t) => this.animate(t));
-
-    // Se a aba estiver em segundo plano, não gasta CPU
-    if (document.hidden) return;
-
-    const elapsed = now - this.lastFrameTime;
-    if (elapsed < this.fpsInterval) return;
-    this.lastFrameTime = now - (elapsed % this.fpsInterval);
-
+  animate() {
     const { ctx, canvas, bars, colors } = this;
-    if (!ctx || !canvas) return;
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
 
     let arr;
-    if (this.analyser && this.data && isPlaying) {
+    if (this.analyser && this.data) {
       this.analyser.getByteFrequencyData(this.data);
       arr = this.data;
     } else {
-      // idle suave
-      const t = (now || performance.now()) / 600;
+      // idle: onda suave animada
+      const t = performance.now() / 500;
       arr = new Uint8Array(bars);
-      for (let i = 0; i < bars; i++) arr[i] = 35 + Math.abs(Math.sin(t + i * 0.3)) * 45;
+      for (let i = 0; i < bars; i++) arr[i] = 40 + Math.abs(Math.sin(t + i * 0.35)) * 60;
     }
 
     const bw = w / bars;
@@ -355,12 +341,17 @@ class RadioVMU {
       const grad = ctx.createLinearGradient(x, y, x, h);
       grad.addColorStop(0, c1);
       grad.addColorStop(1, c2);
+      ctx.shadowColor = c1;
+      ctx.shadowBlur = 18;
       ctx.fillStyle = grad;
       ctx.fillRect(x + 1, y, Math.max(1, bw - 2), bh);
-      // brilho topo leve sem shadowBlur pesado
-      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      // brilho topo
+      ctx.shadowBlur = 26;
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
       ctx.fillRect(x + 1, y, Math.max(1, bw - 2), 2);
     }
+    ctx.shadowBlur = 0;
+    requestAnimationFrame(() => this.animate());
   }
 }
 const vmu = new RadioVMU($("vmu-canvas"));
@@ -1322,36 +1313,22 @@ function setupShare() {
    ============================================================ */
 function initParticles() {
   const canvas = $("particles");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
-  if (!ctx) return;
-
+  const ctx = canvas.getContext("2d");
   let W, H, particles;
-  let lastParticleTime = 0;
-  const particleInterval = 1000 / 30; // 30 FPS econômico
-
   function resize() {
+    // clientWidth/clientHeight excluem a barra de rolagem (innerWidth a inclui
+    // e provocava overflow horizontal intermitente)
     W = canvas.width = document.documentElement.clientWidth;
     H = canvas.height = document.documentElement.clientHeight;
   }
   function make() {
-    // Quantidade moderada de partículas sem sobrecarregar telas UltraWide / 4K
-    const count = Math.min(45, Math.max(15, Math.floor(W / 45)));
-    particles = Array.from({ length: count }, () => ({
+    particles = Array.from({ length: Math.min(70, Math.floor(W / 22)) }, () => ({
       x: Math.random() * W, y: Math.random() * H,
-      r: Math.random() * 2 + 0.5, vy: Math.random() * 0.4 + 0.15,
-      vx: (Math.random() - 0.5) * 0.25, a: Math.random() * 0.4 + 0.15,
+      r: Math.random() * 2 + 0.5, vy: Math.random() * 0.5 + 0.15,
+      vx: (Math.random() - 0.5) * 0.3, a: Math.random() * 0.5 + 0.2,
     }));
   }
-  function draw(now = 0) {
-    requestAnimationFrame(draw);
-
-    if (document.hidden) return;
-
-    const elapsed = now - lastParticleTime;
-    if (elapsed < particleInterval) return;
-    lastParticleTime = now - (elapsed % particleInterval);
-
+  function draw() {
     ctx.clearRect(0, 0, W, H);
     particles.forEach((p) => {
       p.y -= p.vy; p.x += p.vx;
@@ -1359,11 +1336,13 @@ function initParticles() {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(229, 9, 20, ${p.a})`;
+      ctx.shadowColor = "#ff2d3f"; ctx.shadowBlur = 8;
       ctx.fill();
     });
+    requestAnimationFrame(draw);
   }
   resize(); make(); draw();
-  addEventListener("resize", () => { resize(); make(); }, { passive: true });
+  addEventListener("resize", () => { resize(); make(); });
 }
 
 function initStickyObserver() {
