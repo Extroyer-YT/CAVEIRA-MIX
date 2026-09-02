@@ -331,10 +331,22 @@
   function startVuMeterAnimation() {
     if (vuAnimId) cancelAnimationFrame(vuAnimId);
 
-    const vuLeftSegments = document.querySelectorAll(".vu-meter-left .vu-segment");
-    const vuRightSegments = document.querySelectorAll(".vu-meter-right .vu-segment");
+    const vuLeftSegments = Array.from(document.querySelectorAll(".vu-meter-left .vu-segment"));
+    const vuRightSegments = Array.from(document.querySelectorAll(".vu-meter-right .vu-segment"));
+    let prevLevelL = -1;
+    let prevLevelR = -1;
+    let lastVuTime = 0;
+    const vuInterval = 1000 / 30; // 30 FPS
 
-    function renderVu() {
+    function renderVu(now = 0) {
+      vuAnimId = requestAnimationFrame(renderVu);
+
+      if (document.hidden) return;
+
+      const elapsed = now - lastVuTime;
+      if (elapsed < vuInterval) return;
+      lastVuTime = now - (elapsed % vuInterval);
+
       if (analyserNode && vuDataArray && isEnabled) {
         analyserNode.getByteFrequencyData(vuDataArray);
 
@@ -352,19 +364,27 @@
         const levelL = Math.min(8, Math.floor((avgL / 180) * 8 * (currentBoost * 0.8)));
         const levelR = Math.min(8, Math.floor((avgR / 180) * 8 * (currentBoost * 0.8)));
 
-        vuLeftSegments.forEach((seg, i) => {
-          seg.classList.toggle("lit", i < levelL);
-        });
+        if (levelL !== prevLevelL) {
+          prevLevelL = levelL;
+          vuLeftSegments.forEach((seg, i) => {
+            seg.classList.toggle("lit", i < levelL);
+          });
+        }
 
-        vuRightSegments.forEach((seg, i) => {
-          seg.classList.toggle("lit", i < levelR);
-        });
+        if (levelR !== prevLevelR) {
+          prevLevelR = levelR;
+          vuRightSegments.forEach((seg, i) => {
+            seg.classList.toggle("lit", i < levelR);
+          });
+        }
       } else {
-        vuLeftSegments.forEach((seg) => seg.classList.remove("lit"));
-        vuRightSegments.forEach((seg) => seg.classList.remove("lit"));
+        if (prevLevelL !== 0 || prevLevelR !== 0) {
+          prevLevelL = 0;
+          prevLevelR = 0;
+          vuLeftSegments.forEach((seg) => seg.classList.remove("lit"));
+          vuRightSegments.forEach((seg) => seg.classList.remove("lit"));
+        }
       }
-
-      vuAnimId = requestAnimationFrame(renderVu);
     }
 
     renderVu();

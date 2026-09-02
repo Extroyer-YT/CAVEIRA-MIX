@@ -244,8 +244,13 @@
     } catch (err) {
       console.error("[Auth] Erro ao entrar:", err);
       let msg = "Falha no login. Verifique seu e-mail e senha.";
-      if (err.message.includes("Invalid login credentials")) {
-        msg = "E-mail ou senha incorretos.";
+      const errMsg = (err.message || "").toLowerCase();
+      if (errMsg.includes("invalid login credentials")) {
+        msg = "E-mail ou senha incorretos. Verifique se digitou corretamente ou se o e-mail precisa de confirmação no Supabase.";
+      } else if (errMsg.includes("email not confirmed")) {
+        msg = "E-mail ainda não confirmado! Verifique sua caixa de entrada ou desative a confirmação de e-mail no painel do Supabase.";
+      } else if (err.message) {
+        msg = err.message;
       }
       if (errorEl) errorEl.textContent = msg;
       showToast(msg, "error");
@@ -297,15 +302,28 @@
 
       if (error) throw error;
 
-      showToast(`Conta criada com sucesso! Bem-vindo, ${name}! 🤘`, "success");
-      closeAuthModal();
+      // Se o Supabase exigir confirmação por e-mail, session virá nulo
+      if (data?.user && !data?.session && data?.user?.identities?.length > 0) {
+        showToast(`Conta criada! Verifique seu e-mail para confirmar antes de logar. 🤘`, "info");
+        if (errorEl) {
+          errorEl.style.color = "#fbbf24";
+          errorEl.textContent = "Conta criada! Se a confirmação de e-mail estiver ativa no Supabase, confirme o link no seu e-mail antes de fazer login.";
+        }
+      } else {
+        showToast(`Conta criada com sucesso! Bem-vindo, ${name}! 🤘`, "success");
+        closeAuthModal();
+      }
     } catch (err) {
       console.error("[Auth] Erro ao cadastrar:", err);
       let msg = err.message || "Erro ao criar conta.";
-      if (err.message.includes("User already registered")) {
+      const errMsg = (err.message || "").toLowerCase();
+      if (errMsg.includes("user already registered")) {
         msg = "Este e-mail já possui cadastro. Tente fazer login.";
       }
-      if (errorEl) errorEl.textContent = msg;
+      if (errorEl) {
+        errorEl.style.color = "";
+        errorEl.textContent = msg;
+      }
       showToast(msg, "error");
     } finally {
       if (btnSubmit) {

@@ -47,23 +47,26 @@ body {
 /* --- Fundo dinâmico --- */
 .bg-layer {
   position: fixed; inset: 0; z-index: -3;
-  background: url("/live/assets/bg.jpg") center/cover no-repeat fixed;
+  background: url("/live/assets/bg.jpg") center/cover no-repeat;
   filter: brightness(0.5) saturate(1.1);
+  transform: translateZ(0);
+  will-change: transform;
 }
 .bg-layer::after {
   content: ""; position: absolute; inset: 0;
   background: radial-gradient(circle at 50% 0%, rgba(229, 9, 20, 0.18), transparent 55%),
               linear-gradient(180deg, rgba(10, 10, 10, 0.6), rgba(10, 10, 10, 0.95));
 }
-#particles { position: fixed; inset: 0; z-index: -2; pointer-events: none; }
+#particles { position: fixed; inset: 0; z-index: -2; pointer-events: none; transform: translateZ(0); }
 
 /* --- Glass --- */
 .glass {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-radius: var(--radius);
+  transform: translateZ(0);
 }
 
 /* ============================ HEADER ============================ */
