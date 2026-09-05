@@ -37,35 +37,14 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js" defer></script>
 </head>
 <body>
-  <!-- TELA DE ABERTURA (SPLASH SCREEN GLASSMORPHISM & BLUR) -->
+  <!-- TELA DE ABERTURA CINEMATOGRÁFICA ESTILO +SBT / STREAMING -->
   <div id="splash-screen" class="splash-screen" role="dialog" aria-modal="true" aria-label="Abertura Rádio Web Caveira">
     <div class="splash-backdrop-blur" aria-hidden="true"></div>
-    <div class="splash-glow-sphere" aria-hidden="true"></div>
-    <div class="splash-card glass">
-      <div class="splash-logo-wrap">
+    <div class="splash-ambient-glow" aria-hidden="true"></div>
+    <div class="splash-center-content">
+      <div class="splash-logo-container">
         <img src="/live/assets/radio-caveira-logo.jpg" alt="Rádio Web Caveira" class="splash-logo" />
-        <div class="splash-logo-glow" aria-hidden="true"></div>
       </div>
-      <div class="splash-text-wrap">
-        <h1 class="splash-title">RÁDIO WEB CAVEIRA</h1>
-        <p class="splash-slogan">ROCK • METAL • UNDERGROUND 24H</p>
-      </div>
-      <div class="splash-loading-wrap">
-        <div class="splash-progress-track">
-          <div class="splash-progress-bar"></div>
-        </div>
-        <div class="splash-status-row">
-          <span class="splash-status-text">
-            <span class="splash-pulse-dot"></span> Sintonizando transmissão ao vivo...
-          </span>
-          <div class="splash-sound-bars" aria-hidden="true">
-            <span></span><span></span><span></span><span></span>
-          </div>
-        </div>
-      </div>
-      <button type="button" id="splash-skip-btn" class="splash-skip-btn" aria-label="Pular abertura">
-        Pular abertura ➔
-      </button>
     </div>
   </div>
   <script>
@@ -80,11 +59,10 @@
         setTimeout(function () {
           splash.style.display = 'none';
           if (splash.parentNode) splash.parentNode.removeChild(splash);
-        }, 900);
+        }, 850);
       }
-      var skipBtn = document.getElementById('splash-skip-btn');
-      if (skipBtn) skipBtn.addEventListener('click', dismissSplash);
-      // Desaparece com transição suave após 3 segundos
+      splash.addEventListener('click', dismissSplash);
+      // Desaparece automaticamente após 3 segundos
       setTimeout(dismissSplash, 3000);
     })();
   </script>
