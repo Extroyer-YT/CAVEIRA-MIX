@@ -199,13 +199,8 @@ document.addEventListener("visibilitychange", () => {
 /* ---- API pública do player ---- */
 function updatePlayButtonUI() {
   btnPlay.textContent = isPlaying ? "⏸" : "▶";
-  const pipBtn = $("pip-btn-play");
-  if (pipBtn) pipBtn.textContent = isPlaying ? "⏸" : "▶";
-  const pipVinyl = $("pip-disc-vinyl");
-  if (pipVinyl) {
-    if (isPlaying) pipVinyl.classList.add("playing");
-    else pipVinyl.classList.remove("playing");
-  }
+  const stickyBtn = $("sticky-btn-play");
+  if (stickyBtn) stickyBtn.textContent = isPlaying ? "⏸" : "▶";
 }
 
 function play() {
@@ -239,21 +234,28 @@ btnPlay.addEventListener("click", () => (isPlaying ? pause() : play()));
 volume.addEventListener("input", () => {
   const v = volume.value;
   audio.volume = v / 100;
-  const pv = $("pip-volume-slider");
-  if (pv) pv.value = v;
+  const sv = $("sticky-volume");
+  if (sv) sv.value = v;
 });
 audio.volume = volume.value / 100;
 
-// Mini Player PiP Flutuante Listeners
-const pipBtnPlay = $("pip-btn-play");
-if (pipBtnPlay) pipBtnPlay.addEventListener("click", () => (isPlaying ? pause() : play()));
+// Sticky Player listeners
+const stickyBtn = $("sticky-btn-play");
+if (stickyBtn) stickyBtn.addEventListener("click", () => (isPlaying ? pause() : play()));
 
-const pipVolSlider = $("pip-volume-slider");
-if (pipVolSlider) {
-  pipVolSlider.addEventListener("input", () => {
-    const v = pipVolSlider.value;
+const stickyVol = $("sticky-volume");
+if (stickyVol) {
+  stickyVol.addEventListener("input", () => {
+    const v = stickyVol.value;
     audio.volume = v / 100;
     if (volume) volume.value = v;
+  });
+}
+
+const stickyScrollTop = $("sticky-scroll-top");
+if (stickyScrollTop) {
+  stickyScrollTop.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
 
@@ -468,12 +470,14 @@ function formatSec(sec) {
 
 function tickProgressBar() {
   const wrap = $("track-progress-wrap");
-  const pipWrap = $("floating-pip-player");
+  const stickyWrap = $("sticky-progress-wrap");
   if (!trackProgressState.duration || trackProgressState.duration <= 0) {
     if (wrap) wrap.style.display = "none";
+    if (stickyWrap) stickyWrap.style.display = "none";
     return;
   }
   if (wrap) wrap.style.display = "block";
+  if (stickyWrap) stickyWrap.style.display = "flex";
 
   const diff = Math.floor((Date.now() - trackProgressState.fetchTime) / 1000);
   const curElapsed = Math.min(trackProgressState.duration, Math.max(0, trackProgressState.elapsed + diff));
@@ -488,11 +492,11 @@ function tickProgressBar() {
   const elTot = $("track-time-total");
   if (elTot) elTot.textContent = formatSec(trackProgressState.duration);
 
-  const pipFill = $("pip-progress-fill");
-  if (pipFill) pipFill.style.width = pct + "%";
+  const stickyFill = $("sticky-progress-fill");
+  if (stickyFill) stickyFill.style.width = pct + "%";
 
-  const pipTime = $("pip-time-display");
-  if (pipTime) pipTime.textContent = `${formatSec(curElapsed)} / ${formatSec(trackProgressState.duration)}`;
+  const stickyTime = $("sticky-time");
+  if (stickyTime) stickyTime.textContent = `${formatSec(curElapsed)} / ${formatSec(trackProgressState.duration)}`;
 }
 
 setInterval(tickProgressBar, 1000);
@@ -530,10 +534,10 @@ async function updateNowPlaying() {
 
     $("status-online").textContent = data.is_online === false ? "OFFLINE" : "ONLINE";
 
-    const pipTitle = $("pip-track-title");
-    if (pipTitle) pipTitle.textContent = title;
-    const pipArtist = $("pip-track-artist");
-    if (pipArtist) pipArtist.textContent = artist;
+    const stickyTitle = $("sticky-title");
+    if (stickyTitle) stickyTitle.textContent = title;
+    const stickyArtist = $("sticky-artist");
+    if (stickyArtist) stickyArtist.textContent = artist;
 
     const key = `${artist}-${title}`;
     if (key !== lastTrackKey) {
@@ -546,8 +550,8 @@ async function updateNowPlaying() {
       const cover = await fetchCover(artist, title, fallbackArt);
       discCover.src = cover;
 
-      const pipCover = $("pip-cover-img");
-      if (pipCover) pipCover.src = cover;
+      const stickyCover = $("sticky-cover");
+      if (stickyCover) stickyCover.src = cover;
 
       loadArtistInfo(artist);
     }
@@ -1341,181 +1345,123 @@ function initParticles() {
   addEventListener("resize", () => { resize(); make(); });
 }
 
-// Controle do Modo Mini Player Flutuante Estilo YouTube (PiP / Floating Window)
-let isPipActive = false;
+// Controle do Modo Mini Player Flutuante (Floating / PiP Player)
+let isFloatingPinned = false;
 try {
-  isPipActive = localStorage.getItem("caveira_pip_player_active") === "true";
+  isFloatingPinned = localStorage.getItem("caveira_floating_player_pinned") === "true";
 } catch (e) {}
 
-function initFloatingPipPlayer() {
-  const pip = $("floating-pip-player");
+function initStickyObserver() {
+  const sticky = $("sticky-player");
   const hero = $("hero");
   const btnToggleFloating = $("btn-toggle-floating-player");
   const navBtnFloating = $("nav-btn-floating");
-  const btnExpand = $("pip-btn-expand");
-  const btnClose = $("pip-btn-close");
-  const dragHandle = $("pip-drag-handle");
+  const btnPinSticky = $("sticky-btn-pin");
+  const btnCloseSticky = $("sticky-btn-close");
+  const btnScrollTop = $("sticky-scroll-top");
 
-  if (!pip) return;
+  if (!sticky) return;
 
-  function updatePipUI() {
-    if (isPipActive) {
-      pip.classList.add("pip-active");
+  function updateFloatingUI() {
+    if (isFloatingPinned) {
+      sticky.classList.add("visible");
+      sticky.classList.add("pinned-floating");
       if (btnToggleFloating) {
         btnToggleFloating.classList.add("active");
         const lbl = btnToggleFloating.querySelector(".pip-label");
-        if (lbl) lbl.textContent = "Mini Player Ativo";
+        if (lbl) lbl.textContent = "Fixado";
       }
       if (navBtnFloating) navBtnFloating.classList.add("active");
+      if (btnPinSticky) {
+        btnPinSticky.classList.add("active");
+        btnPinSticky.title = "Desafixar Mini Player (Modo Automático)";
+      }
     } else {
-      pip.classList.remove("pip-active");
+      sticky.classList.remove("pinned-floating");
       if (btnToggleFloating) {
         btnToggleFloating.classList.remove("active");
         const lbl = btnToggleFloating.querySelector(".pip-label");
         if (lbl) lbl.textContent = "Mini Player";
       }
       if (navBtnFloating) navBtnFloating.classList.remove("active");
+      if (btnPinSticky) {
+        btnPinSticky.classList.remove("active");
+        btnPinSticky.title = "Fixar Mini Player Flutuante Sempre Visível";
+      }
     }
   }
 
-  function togglePipMode(forceState) {
+  function togglePinnedFloating(forceState) {
     if (typeof forceState === "boolean") {
-      isPipActive = forceState;
+      isFloatingPinned = forceState;
     } else {
-      isPipActive = !isPipActive;
+      isFloatingPinned = !isFloatingPinned;
     }
 
     try {
-      localStorage.setItem("caveira_pip_player_active", String(isPipActive));
+      localStorage.setItem("caveira_floating_player_pinned", String(isFloatingPinned));
     } catch (e) {}
 
-    updatePipUI();
+    updateFloatingUI();
 
     if (window.showToast) {
-      if (isPipActive) {
-        window.showToast("📺 Mini Player Flutuante ativo! Você pode arrastá-lo pela tela.", "success");
+      if (isFloatingPinned) {
+        window.showToast("📌 Modo Mini Player Flutuante fixado na tela!", "success");
       } else {
-        window.showToast("Mini Player Flutuante desativado.", "info");
+        window.showToast("Mini player em modo automático (surge ao rolar a página).", "info");
       }
     }
   }
 
   if (btnToggleFloating) {
-    btnToggleFloating.addEventListener("click", () => togglePipMode());
+    btnToggleFloating.addEventListener("click", () => togglePinnedFloating());
   }
   if (navBtnFloating) {
-    navBtnFloating.addEventListener("click", () => togglePipMode());
+    navBtnFloating.addEventListener("click", () => togglePinnedFloating());
   }
-  if (btnClose) {
-    btnClose.addEventListener("click", () => {
-      togglePipMode(false);
+  if (btnPinSticky) {
+    btnPinSticky.addEventListener("click", () => togglePinnedFloating());
+  }
+  if (btnCloseSticky) {
+    btnCloseSticky.addEventListener("click", () => {
+      isFloatingPinned = false;
+      try {
+        localStorage.setItem("caveira_floating_player_pinned", "false");
+      } catch (e) {}
+      sticky.classList.remove("visible");
+      sticky.classList.remove("pinned-floating");
+      updateFloatingUI();
     });
   }
-  if (btnExpand) {
-    btnExpand.addEventListener("click", () => {
+  if (btnScrollTop) {
+    btnScrollTop.addEventListener("click", () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
 
-  // --- DRAG & DROP / ARRASTAR O MINI PLAYER (Mouse & Touch) ---
-  let isDragging = false;
-  let startX = 0, startY = 0;
-  let initialLeft = 0, initialTop = 0;
-
-  if (dragHandle) {
-    // Mouse Drag
-    dragHandle.addEventListener("mousedown", (e) => {
-      if (e.target.closest("button")) return;
-      isDragging = true;
-      pip.classList.add("is-dragging");
-      const rect = pip.getBoundingClientRect();
-      startX = e.clientX;
-      startY = e.clientY;
-      initialLeft = rect.left;
-      initialTop = rect.top;
-
-      // Fixa posicionamento via top/left absoluto na viewport
-      pip.style.right = "auto";
-      pip.style.bottom = "auto";
-      pip.style.left = initialLeft + "px";
-      pip.style.top = initialTop + "px";
-
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-    });
-
-    function onMouseMove(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-
-      let newLeft = initialLeft + dx;
-      let newTop = initialTop + dy;
-
-      // Limites da tela
-      const maxLeft = window.innerWidth - pip.offsetWidth - 10;
-      const maxTop = window.innerHeight - pip.offsetHeight - 10;
-      newLeft = Math.max(10, Math.min(maxLeft, newLeft));
-      newTop = Math.max(10, Math.min(maxTop, newTop));
-
-      pip.style.left = newLeft + "px";
-      pip.style.top = newTop + "px";
-    }
-
-    function onMouseUp() {
-      isDragging = false;
-      pip.classList.remove("is-dragging");
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
-
-    // Touch Drag (Mobile / Tablets)
-    dragHandle.addEventListener("touchstart", (e) => {
-      if (e.target.closest("button")) return;
-      if (e.touches.length !== 1) return;
-      isDragging = true;
-      pip.classList.add("is-dragging");
-      const touch = e.touches[0];
-      const rect = pip.getBoundingClientRect();
-      startX = touch.clientX;
-      startY = touch.clientY;
-      initialLeft = rect.left;
-      initialTop = rect.top;
-
-      pip.style.right = "auto";
-      pip.style.bottom = "auto";
-      pip.style.left = initialLeft + "px";
-      pip.style.top = initialTop + "px";
-    }, { passive: true });
-
-    dragHandle.addEventListener("touchmove", (e) => {
-      if (!isDragging || e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
-
-      let newLeft = initialLeft + dx;
-      let newTop = initialTop + dy;
-
-      const maxLeft = window.innerWidth - pip.offsetWidth - 8;
-      const maxTop = window.innerHeight - pip.offsetHeight - 8;
-      newLeft = Math.max(8, Math.min(maxLeft, newLeft));
-      newTop = Math.max(8, Math.min(maxTop, newTop));
-
-      pip.style.left = newLeft + "px";
-      pip.style.top = newTop + "px";
-    }, { passive: true });
-
-    dragHandle.addEventListener("touchend", () => {
-      isDragging = false;
-      pip.classList.remove("is-dragging");
-    });
+  // Se já estiver salvo como fixado, aplica imediatamente
+  if (isFloatingPinned) {
+    updateFloatingUI();
   }
 
-  // Se já estava salvo ativo, ativa imediatamente
-  if (isPipActive) {
-    updatePipUI();
+  // Observer normal para quando a pessoa rolar a página para baixo
+  if (hero && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) {
+          sticky.classList.add("visible");
+        } else if (!isFloatingPinned) {
+          sticky.classList.remove("visible");
+        }
+      });
+    }, { threshold: 0.15 });
+    io.observe(hero);
+  } else if (hero) {
+    window.addEventListener("scroll", () => {
+      if (isFloatingPinned) return;
+      if (window.scrollY > 350) sticky.classList.add("visible");
+      else sticky.classList.remove("visible");
+    });
   }
 }
 
@@ -1525,7 +1471,7 @@ function initFloatingPipPlayer() {
 $("year").textContent = new Date().getFullYear();
 setupShare();
 initParticles();
-initFloatingPipPlayer();
+initStickyObserver();
 tickClock(); setInterval(tickClock, 1000);
 loadWeather(); setInterval(loadWeather, 10 * 60 * 1000);
 loadNews(); setInterval(loadNews, 15 * 60 * 1000);
