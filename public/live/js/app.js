@@ -203,11 +203,6 @@ function updatePlayButtonUI() {
   if (stickyBtn) stickyBtn.textContent = isPlaying ? "⏸" : "▶";
   const pipBtn = $("pip-btn-play");
   if (pipBtn) pipBtn.textContent = isPlaying ? "⏸" : "▶";
-  const pipDisc = $("pip-disc-vinyl");
-  if (pipDisc) {
-    if (isPlaying) pipDisc.classList.add("playing");
-    else pipDisc.classList.remove("playing");
-  }
 }
 
 function play() {
@@ -222,7 +217,6 @@ function play() {
     lsmSetStatus("");
     lsmStartLagWatcher();
     vmu.ensureInit(audio);
-    updateOsPipCanvas();
   }).catch(() => {
     lsmSetStatus("Não foi possível iniciar. Toque no botão novamente.");
   });
@@ -236,7 +230,6 @@ function pause() {
   equalizer.classList.remove("active");
   lsmStopLagWatcher();
   lsmClearStallTimer();
-  updateOsPipCanvas();
 }
 
 btnPlay.addEventListener("click", () => (isPlaying ? pause() : play()));
@@ -589,6 +582,9 @@ async function updateNowPlaying() {
 
       const cover = await fetchCover(artist, title, fallbackArt);
       discCover.src = cover;
+
+      // Carrega a capa para o PiP via Image com crossOrigin (evita CORS no canvas)
+      loadOsPipCover(cover);
 
       const stickyCover = $("sticky-cover");
       if (stickyCover) stickyCover.src = cover;
@@ -1472,37 +1468,278 @@ let osPipStream = null;
 
 function setupOsPip() {
   if (osPipVideo) return;
+
   osPipCanvas = document.createElement("canvas");
-  osPipCanvas.width = 512;
-  osPipCanvas.height = 288; // proporção 16:9
+  osPipCanvas.width = 480;
+  osPipCanvas.height = 270; // 16:9
   osPipCtx = osPipCanvas.getContext("2d");
 
   osPipVideo = document.createElement("video");
   osPipVideo.muted = true;
   osPipVideo.playsInline = true;
+  // autoplay silencioso para permitir PiP imediato
+  osPipVideo.autoplay = true;
 
   try {
-    osPipStream = osPipCanvas.captureStream(20);
+    osPipStream = osPipCanvas.captureStream(30);
     osPipVideo.srcObject = osPipStream;
   } catch (e) {
-    console.warn("Canvas captureStream não suportado para PiP nativo:", e);
+    console.warn("Canvas captureStream não suportado:", e);
   }
 
-  updateOsPipCanvas();
-
+  // Botão "desktop" extra no sticky player
   const pipBtnOs = $("pip-btn-os-pip");
   if (pipBtnOs) {
-    pipBtnOs.addEventListener("click", () => {
-      toggleOsPictureInPicture();
-    });
+    pipBtnOs.addEventListener("click", () => toggleOsPictureInPicture());
   }
 
-  // Se o usuário fechar o PiP nativo do sistema
+  // Quando o usuário fecha o PiP pelo X do sistema
   osPipVideo.addEventListener("leavepictureinpicture", () => {
-    const pipBtnOs = $("pip-btn-os-pip");
-    if (pipBtnOs) pipBtnOs.classList.remove("active");
+    [$("pip-btn-os-pip"), $("btn-toggle-floating-player")].forEach((b) => {
+      if (!b) return;
+      b.classList.remove("active");
+      const lbl = b.querySelector(".pip-label");
+      if (lbl) lbl.textContent = "Mini Player";
+    });
   });
+
+  // Inicia loop de animação contínuo do canvas
+  startOsPipLoop();
 }
+
+// Cache da capa para evitar recarregamento constante
+let _osPipCoverUrl = "";
+let _osPipCoverImg = null;
+let _osPipCoverReady = false;
+let _osPipAngle = 0;          // rotação do disco
+let _osPipLoopRunning = false;
+
+function loadOsPipCover(url) {
+  if (!url || url === _osPipCoverUrl) return;
+  _osPipCoverUrl = url;
+  _osPipCoverReady = false;
+  const img = new Image();
+  img.crossOrigin = "anonymous"; // tenta com CORS
+  img.onload = () => { _osPipCoverImg = img; _osPipCoverReady = true; };
+  img.onerror = () => {
+    // Tenta sem CORS (fallback para imagens sem header CORS)
+    const img2 = new Image();
+    img2.onload = () => { _osPipCoverImg = img2; _osPipCoverReady = true; };
+    img2.onerror = () => { _osPipCoverImg = null; _osPipCoverReady = false; };
+    img2.src = url + (url.includes("?") ? "&" : "?") + "_pip=" + Date.now();
+  };
+  img.src = url;
+}
+
+function startOsPipLoop() {
+  if (_osPipLoopRunning) return;
+  _osPipLoopRunning = true;
+
+  function loop() {
+    if (!document.pictureInPictureElement) {
+      // Continua rodando em background para ter frames prontos quando abrir
+    }
+    drawOsPipFrame();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+function drawOsPipFrame() {
+  if (!osPipCtx || !osPipCanvas) return;
+  const w = osPipCanvas.width;
+  const h = osPipCanvas.height;
+  const ctx = osPipCtx;
+
+  // ── Fundo degradê escuro com leve vermelho ──
+  const bg = ctx.createLinearGradient(0, 0, w, h);
+  bg.addColorStop(0, "#12121a");
+  bg.addColorStop(0.5, "#0a0a10");
+  bg.addColorStop(1, "#1e0305");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+
+  // ── Linha de borda esquerda vermelha ──
+  ctx.fillStyle = "#e50914";
+  ctx.fillRect(0, 0, 4, h);
+
+  // ── Capa / Disco ──
+  const pad = 18;
+  const imgSize = h - pad * 2; // ~234px
+  const cx = pad + imgSize / 2;
+  const cy = pad + imgSize / 2;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Rotação do disco (quando tocando)
+  if (isPlaying) {
+    _osPipAngle += 0.012;
+  }
+  ctx.rotate(_osPipAngle);
+
+  // Recorte circular
+  ctx.beginPath();
+  ctx.arc(0, 0, imgSize / 2, 0, Math.PI * 2);
+  ctx.clip();
+
+  if (_osPipCoverReady && _osPipCoverImg) {
+    try {
+      ctx.drawImage(_osPipCoverImg, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
+    } catch (_) {
+      drawVinylDisc(ctx, imgSize);
+    }
+  } else {
+    drawVinylDisc(ctx, imgSize);
+  }
+
+  ctx.restore();
+
+  // Aro/borda do disco
+  ctx.beginPath();
+  ctx.arc(cx, cy, imgSize / 2, 0, Math.PI * 2);
+  ctx.strokeStyle = isPlaying
+    ? "rgba(255, 45, 63, 0.9)"
+    : "rgba(255, 255, 255, 0.2)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Buraquinho central do vinil
+  ctx.beginPath();
+  ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+  ctx.fillStyle = "#0a0a10";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctx.fillStyle = isPlaying ? "#e50914" : "#555";
+  ctx.fill();
+
+  // ── Textos ──
+  const textLeft = pad + imgSize + 20;
+  const maxTextW = w - textLeft - 16;
+
+  // Badge ao vivo
+  ctx.fillStyle = "#e50914";
+  ctx.beginPath();
+  ctx.roundRect(textLeft, 20, 160, 22, 4);
+  ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 11px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("● AO VIVO  •  RÁDIO CAVEIRA", textLeft + 8, 35);
+
+  // Título da música — lê do DOM correto
+  const rawTitle = $("track-title")?.textContent?.trim() || "Carregando…";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px sans-serif";
+  let title = rawTitle;
+  while (ctx.measureText(title).width > maxTextW && title.length > 2) {
+    title = title.slice(0, -1);
+  }
+  if (title !== rawTitle) title += "…";
+  ctx.fillText(title, textLeft, 74);
+
+  // Artista
+  const artist = $("track-artist")?.textContent?.trim() || "Rádio Caveira";
+  ctx.fillStyle = "#9090a0";
+  ctx.font = "15px sans-serif";
+  ctx.fillText(artist, textLeft, 98);
+
+  // Status play/pause com ponto pulsante
+  const now = Date.now();
+  const pulse = Math.sin(now / 400) * 0.4 + 0.6;
+  ctx.fillStyle = isPlaying
+    ? `rgba(0, 220, 80, ${pulse})`
+    : "rgba(255, 180, 0, 0.9)";
+  ctx.font = "bold 13px sans-serif";
+  ctx.fillText(
+    isPlaying ? "▶  TRANSMITINDO AGORA" : "⏸  PAUSADO",
+    textLeft,
+    126
+  );
+
+  // Barra de progresso
+  if (trackProgressState && trackProgressState.duration > 0) {
+    const diff = Math.floor((Date.now() - trackProgressState.fetchTime) / 1000);
+    const cur = Math.min(trackProgressState.duration, Math.max(0, trackProgressState.elapsed + diff));
+    const pct = Math.min(1, Math.max(0, cur / trackProgressState.duration));
+
+    const bx = textLeft;
+    const by = 148;
+    const bw = maxTextW;
+    const bh = 5;
+
+    // Fundo da barra
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 3);
+    ctx.fill();
+
+    // Progresso
+    if (pct > 0) {
+      const fillGrad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+      fillGrad.addColorStop(0, "#e50914");
+      fillGrad.addColorStop(1, "#ff6b7a");
+      ctx.fillStyle = fillGrad;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw * pct, bh, 3);
+      ctx.fill();
+    }
+
+    // Tempo
+    ctx.fillStyle = "#666676";
+    ctx.font = "12px monospace";
+    ctx.fillText(
+      `${formatSec(cur)} / ${formatSec(trackProgressState.duration)}`,
+      textLeft,
+      by + 20
+    );
+  }
+
+  // Volume (barra menor)
+  const volPct = audio ? audio.volume : 0.8;
+  const vx = textLeft;
+  const vy = h - 30;
+  const vw = maxTextW;
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(vx, vy, vw, 3);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+  ctx.fillRect(vx, vy, vw * volPct, 3);
+  ctx.fillStyle = "#666676";
+  ctx.font = "11px sans-serif";
+  ctx.fillText(`🔊 ${Math.round(volPct * 100)}%`, vx, vy - 6);
+}
+
+function drawVinylDisc(ctx, size) {
+  // Disco de vinil padrão quando não há capa
+  ctx.fillStyle = "#1a0a0a";
+  ctx.fillRect(-size / 2, -size / 2, size, size);
+
+  // Ranhuras do vinil
+  for (let r = size * 0.18; r < size / 2 - 4; r += 8) {
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 45, 63, ${0.06 + (r / size) * 0.04})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Label central
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = "#e50914";
+  ctx.fill();
+
+  // Caveira símbolo
+  ctx.fillStyle = "#fff";
+  ctx.font = `bold ${Math.floor(size * 0.15)}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("💀", 0, 4);
+  ctx.textBaseline = "alphabetic";
+}
+
+
 
 function updateOsPipCanvas() {
   if (!osPipCtx || !osPipCanvas) return;
