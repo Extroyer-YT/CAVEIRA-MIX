@@ -1393,136 +1393,20 @@ function initParticles() {
   addEventListener("resize", () => { resize(); make(); });
 }
 
-/* ============================================================
-   MINI PLAYER FLUTUANTE ESTILO YOUTUBE (IN-PAGE PiP COM DRAG & DROP)
-   ============================================================ */
-let isPipActive = false;
-
-function toggleInPagePip(forceState) {
-  const pip = $("floating-pip-player");
+// Botão Mini Player → abre direto o Picture-in-Picture nativo do SO
+function initMainPipButton() {
   const btnToggleFloating = $("btn-toggle-floating-player");
-  if (!pip) return;
+  if (!btnToggleFloating) return;
 
-  isPipActive = typeof forceState === "boolean" ? forceState : !isPipActive;
+  // Garante que o in-page pip esteja sempre oculto (não queremos ele)
+  const inPagePip = $("floating-pip-player");
+  if (inPagePip) inPagePip.style.display = "none";
 
-  if (isPipActive) {
-    pip.style.display = "block";
-    void pip.offsetWidth; // Força reflow para transição suave
-    pip.classList.add("pip-active");
-    if (btnToggleFloating) {
-      btnToggleFloating.classList.add("active");
-      const lbl = btnToggleFloating.querySelector(".pip-label");
-      if (lbl) lbl.textContent = "Fechar Mini";
-    }
-
-    // Sincroniza metadados atuais
-    const title = $("track-title")?.textContent;
-    const artist = $("track-artist")?.textContent;
-    if (title && $("pip-track-title")) $("pip-track-title").textContent = title;
-    if (artist && $("pip-track-artist")) $("pip-track-artist").textContent = artist;
-    if (discCover && $("pip-cover-img")) $("pip-cover-img").src = discCover.src;
-    updatePlayButtonUI();
-    if (window.showToast) window.showToast("Mini Player flutuante ativado!", "info");
-  } else {
-    pip.classList.remove("pip-active");
-    if (btnToggleFloating) {
-      btnToggleFloating.classList.remove("active");
-      const lbl = btnToggleFloating.querySelector(".pip-label");
-      if (lbl) lbl.textContent = "Mini Player";
-    }
-  }
-}
-
-function initFloatingPipPlayer() {
-  const pip = $("floating-pip-player");
-  const handle = $("pip-drag-handle");
-  const btnClose = $("pip-btn-close");
-  const btnExpand = $("pip-btn-expand");
-  const btnOsPip = $("pip-btn-os-pip");
-  const btnToggleFloating = $("btn-toggle-floating-player");
-
-  if (!pip) return;
-
-  // Botão principal no card do player
-  if (btnToggleFloating) {
-    btnToggleFloating.addEventListener("click", () => {
-      toggleInPagePip();
-    });
-  }
-
-  // Botão Fechar no mini player
-  if (btnClose) {
-    btnClose.addEventListener("click", () => {
-      toggleInPagePip(false);
-    });
-  }
-
-  // Botão Expandir / Voltar ao topo
-  if (btnExpand) {
-    btnExpand.addEventListener("click", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      toggleInPagePip(false);
-    });
-  }
-
-  // Botão de abrir na Área de Trabalho (Picture-in-Picture do SO)
-  if (btnOsPip) {
-    btnOsPip.addEventListener("click", () => {
-      setupOsPip();
-      toggleOsPictureInPicture();
-    });
-  }
-
-  // DRAG AND DROP COM MOUSE E TOUCH (Celular e PC)
-  if (handle) {
-    let isDragging = false;
-    let startX = 0, startY = 0;
-    let initialLeft = 0, initialTop = 0;
-
-    const onPointerDown = (e) => {
-      if (e.target.closest(".pip-action-btn")) return;
-      isDragging = true;
-      pip.classList.add("is-dragging");
-
-      const rect = pip.getBoundingClientRect();
-      initialLeft = rect.left;
-      initialTop = rect.top;
-      startX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-      startY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-
-      pip.style.right = "auto";
-      pip.style.bottom = "auto";
-      pip.style.left = initialLeft + "px";
-      pip.style.top = initialTop + "px";
-
-      document.addEventListener("pointermove", onPointerMove);
-      document.addEventListener("pointerup", onPointerUp);
-    };
-
-    const onPointerMove = (e) => {
-      if (!isDragging) return;
-      const clientX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-      const clientY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-      const dx = clientX - startX;
-      const dy = clientY - startY;
-
-      const newLeft = Math.max(10, Math.min(window.innerWidth - pip.offsetWidth - 10, initialLeft + dx));
-      const newTop = Math.max(10, Math.min(window.innerHeight - pip.offsetHeight - 10, initialTop + dy));
-
-      pip.style.left = newLeft + "px";
-      pip.style.top = newTop + "px";
-    };
-
-    const onPointerUp = () => {
-      if (!isDragging) return;
-      isDragging = false;
-      pip.classList.remove("is-dragging");
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerup", onPointerUp);
-    };
-
-    handle.addEventListener("pointerdown", onPointerDown);
-  }
+  btnToggleFloating.addEventListener("click", () => {
+    // Garante que o PiP esteja inicializado antes de tentar abrir
+    setupOsPip();
+    toggleOsPictureInPicture();
+  });
 }
 
 
@@ -1647,12 +1531,6 @@ function setupOsPip() {
   osPipVideo = document.createElement("video");
   osPipVideo.muted = true;
   osPipVideo.playsInline = true;
-  osPipVideo.width = 512;
-  osPipVideo.height = 288;
-  osPipVideo.style.cssText = "position:fixed;width:1px;height:1px;opacity:0.001;pointer-events:none;bottom:0;right:0;z-index:-9999;";
-  if (!osPipVideo.parentElement && document.body) {
-    document.body.appendChild(osPipVideo);
-  }
 
   try {
     // 30 FPS para animação fluida do letreiro e barra de progresso
@@ -2030,9 +1908,9 @@ async function toggleOsPictureInPicture() {
 $("year").textContent = new Date().getFullYear();
 setupShare();
 initParticles();
-setupOsPip();            // inicializa o canvas/vídeo do PiP antes dos botões
-initFloatingPipPlayer(); // inicializa o Mini Player Flutuante com Drag & Drop
-initStickyObserver();    // sticky player do rodapé
+setupOsPip();          // inicializa o canvas/vídeo do PiP antes dos botões
+initMainPipButton();   // conecta o botão Mini Player → PiP nativo do SO
+initStickyObserver();  // sticky player do rodapé
 tickClock(); setInterval(tickClock, 1000);
 loadWeather(); setInterval(loadWeather, 10 * 60 * 1000);
 loadNews(); setInterval(loadNews, 15 * 60 * 1000);
