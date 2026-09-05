@@ -203,6 +203,11 @@ function updatePlayButtonUI() {
   if (stickyBtn) stickyBtn.textContent = isPlaying ? "⏸" : "▶";
   const pipBtn = $("pip-btn-play");
   if (pipBtn) pipBtn.textContent = isPlaying ? "⏸" : "▶";
+  const pipDisc = $("pip-disc-vinyl");
+  if (pipDisc) {
+    if (isPlaying) pipDisc.classList.add("playing");
+    else pipDisc.classList.remove("playing");
+  }
 }
 
 function play() {
@@ -217,6 +222,8 @@ function play() {
     lsmSetStatus("");
     lsmStartLagWatcher();
     vmu.ensureInit(audio);
+    if (typeof updateMediaSessionPlaybackState === "function") updateMediaSessionPlaybackState();
+    if (typeof updateOsPipCanvas === "function") updateOsPipCanvas();
   }).catch(() => {
     lsmSetStatus("Não foi possível iniciar. Toque no botão novamente.");
   });
@@ -230,6 +237,8 @@ function pause() {
   equalizer.classList.remove("active");
   lsmStopLagWatcher();
   lsmClearStallTimer();
+  if (typeof updateMediaSessionPlaybackState === "function") updateMediaSessionPlaybackState();
+  if (typeof updateOsPipCanvas === "function") updateOsPipCanvas();
 }
 
 btnPlay.addEventListener("click", () => (isPlaying ? pause() : play()));
@@ -583,9 +592,6 @@ async function updateNowPlaying() {
       const cover = await fetchCover(artist, title, fallbackArt);
       discCover.src = cover;
 
-      // Carrega a capa para o PiP via Image com crossOrigin (evita CORS no canvas)
-      loadOsPipCover(cover);
-
       const stickyCover = $("sticky-cover");
       if (stickyCover) stickyCover.src = cover;
 
@@ -593,7 +599,9 @@ async function updateNowPlaying() {
       if (pipCover) pipCover.src = cover;
 
       loadArtistInfo(artist);
-      updateOsPipCanvas();
+      if (typeof setPipCover === "function") setPipCover(cover);
+      if (typeof updateMediaSession === "function") updateMediaSession(title, artist, album, cover);
+      if (typeof updateOsPipCanvas === "function") updateOsPipCanvas();
     }
 
     // Expõe dados reais ao módulo do mapa (feed ao vivo usa isso)
@@ -1459,410 +1467,383 @@ function initStickyObserver() {
 
 /* ============================================================
    PICTURE-IN-PICTURE NATIVO DO SISTEMA OPERACIONAL / DESKTOP
-   Permite que o mini player flutue SOBRE QUALQUER PROGRAMA OU ABA
+   Janela flutuante animada sobre a área de trabalho, outros sites e programas
    ============================================================ */
 let osPipVideo = null;
 let osPipCanvas = null;
 let osPipCtx = null;
 let osPipStream = null;
+let osPipAnimId = null;
+let osPipMarqueeStep = 0;
+let osPipCoverImage = null;
+let osPipCoverLoaded = false;
+let osPipCurrentCoverUrl = "";
+let osPipLastFrameTime = 0;
 
+// Carregador de Capa seguro para Canvas (com proxy CORS e fallback)
+function setPipCover(url) {
+  if (!url || url === osPipCurrentCoverUrl) return;
+  osPipCurrentCoverUrl = url;
+  osPipCoverLoaded = false;
+
+  if (url.includes("logo.png") || url.includes("logo.webp")) {
+    osPipCoverImage = null;
+    osPipCoverLoaded = false;
+    updateOsPipCanvas();
+    return;
+  }
+
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    osPipCoverImage = img;
+    osPipCoverLoaded = true;
+    updateOsPipCanvas();
+  };
+  img.onerror = () => {
+    // Tenta carregar via proxy CORS para evitar que o canvas fique bloqueado
+    const proxyUrl = "https://images.weserv.nl/?url=" + encodeURIComponent(url.replace(/^https?:\/\//, ""));
+    const proxyImg = new Image();
+    proxyImg.crossOrigin = "anonymous";
+    proxyImg.onload = () => {
+      osPipCoverImage = proxyImg;
+      osPipCoverLoaded = true;
+      updateOsPipCanvas();
+    };
+    proxyImg.onerror = () => {
+      osPipCoverImage = null;
+      osPipCoverLoaded = false;
+      updateOsPipCanvas();
+    };
+    proxyImg.src = proxyUrl;
+  };
+  img.src = url;
+}
+
+// Inicializa Canvas e Stream de Vídeo
 function setupOsPip() {
   if (osPipVideo) return;
-
   osPipCanvas = document.createElement("canvas");
-  osPipCanvas.width = 480;
-  osPipCanvas.height = 270; // 16:9
+  osPipCanvas.width = 512;
+  osPipCanvas.height = 288; // proporção 16:9 widescreen
   osPipCtx = osPipCanvas.getContext("2d");
 
   osPipVideo = document.createElement("video");
   osPipVideo.muted = true;
   osPipVideo.playsInline = true;
-  // autoplay silencioso para permitir PiP imediato
-  osPipVideo.autoplay = true;
 
   try {
+    // 30 FPS para animação fluida do letreiro e barra de progresso
     osPipStream = osPipCanvas.captureStream(30);
     osPipVideo.srcObject = osPipStream;
   } catch (e) {
     console.warn("Canvas captureStream não suportado:", e);
   }
 
-  // Botão "desktop" extra no sticky player
-  const pipBtnOs = $("pip-btn-os-pip");
-  if (pipBtnOs) {
-    pipBtnOs.addEventListener("click", () => toggleOsPictureInPicture());
+  // Se a capa da música atual já estiver no player, aproveita
+  if (discCover && discCover.src && !discCover.src.includes("logo.png")) {
+    setPipCover(discCover.src);
   }
 
-  // Quando o usuário fecha o PiP pelo X do sistema
+  updateOsPipCanvas();
+
+  const pipBtnOs = $("pip-btn-os-pip");
+  if (pipBtnOs) {
+    pipBtnOs.addEventListener("click", () => {
+      toggleOsPictureInPicture();
+    });
+  }
+
+  const stickyBtnOs = $("sticky-btn-os-pip");
+  if (stickyBtnOs) {
+    stickyBtnOs.addEventListener("click", () => {
+      toggleOsPictureInPicture();
+    });
+  }
+
+  // Quando o usuário fecha a janela flutuante nativa
   osPipVideo.addEventListener("leavepictureinpicture", () => {
-    [$("pip-btn-os-pip"), $("btn-toggle-floating-player")].forEach((b) => {
-      if (!b) return;
-      b.classList.remove("active");
-      const lbl = b.querySelector(".pip-label");
+    stopOsPipLoop();
+    const btnToggleFloating = $("btn-toggle-floating-player");
+    const pipBtnOs = $("pip-btn-os-pip");
+    const stickyBtnOs = $("sticky-btn-os-pip");
+    [btnToggleFloating, pipBtnOs, stickyBtnOs].forEach((btn) => {
+      if (!btn) return;
+      btn.classList.remove("active");
+      const lbl = btn.querySelector(".pip-label");
       if (lbl) lbl.textContent = "Mini Player";
     });
   });
 
-  // Inicia loop de animação contínuo do canvas
-  startOsPipLoop();
+  setupMediaSession();
 }
 
-// Cache da capa para evitar recarregamento constante
-let _osPipCoverUrl = "";
-let _osPipCoverImg = null;
-let _osPipCoverReady = false;
-let _osPipAngle = 0;          // rotação do disco
-let _osPipLoopRunning = false;
-
-function loadOsPipCover(url) {
-  if (!url || url === _osPipCoverUrl) return;
-  _osPipCoverUrl = url;
-  _osPipCoverReady = false;
-  const img = new Image();
-  img.crossOrigin = "anonymous"; // tenta com CORS
-  img.onload = () => { _osPipCoverImg = img; _osPipCoverReady = true; };
-  img.onerror = () => {
-    // Tenta sem CORS (fallback para imagens sem header CORS)
-    const img2 = new Image();
-    img2.onload = () => { _osPipCoverImg = img2; _osPipCoverReady = true; };
-    img2.onerror = () => { _osPipCoverImg = null; _osPipCoverReady = false; };
-    img2.src = url + (url.includes("?") ? "&" : "?") + "_pip=" + Date.now();
-  };
-  img.src = url;
-}
-
+// Loop contínuo de animação quando o PiP nativo está aberto
 function startOsPipLoop() {
-  if (_osPipLoopRunning) return;
-  _osPipLoopRunning = true;
-
-  function loop() {
-    if (!document.pictureInPictureElement) {
-      // Continua rodando em background para ter frames prontos quando abrir
+  if (osPipAnimId) return;
+  const loop = (timestamp) => {
+    if (document.pictureInPictureElement === osPipVideo) {
+      if (!osPipLastFrameTime || timestamp - osPipLastFrameTime >= 30) {
+        osPipLastFrameTime = timestamp;
+        updateOsPipCanvas();
+      }
+      osPipAnimId = requestAnimationFrame(loop);
+    } else {
+      stopOsPipLoop();
     }
-    drawOsPipFrame();
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+  };
+  osPipAnimId = requestAnimationFrame(loop);
 }
 
-function drawOsPipFrame() {
-  if (!osPipCtx || !osPipCanvas) return;
-  const w = osPipCanvas.width;
-  const h = osPipCanvas.height;
-  const ctx = osPipCtx;
-
-  // ── Fundo degradê escuro com leve vermelho ──
-  const bg = ctx.createLinearGradient(0, 0, w, h);
-  bg.addColorStop(0, "#12121a");
-  bg.addColorStop(0.5, "#0a0a10");
-  bg.addColorStop(1, "#1e0305");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-
-  // ── Linha de borda esquerda vermelha ──
-  ctx.fillStyle = "#e50914";
-  ctx.fillRect(0, 0, 4, h);
-
-  // ── Capa / Disco ──
-  const pad = 18;
-  const imgSize = h - pad * 2; // ~234px
-  const cx = pad + imgSize / 2;
-  const cy = pad + imgSize / 2;
-
-  ctx.save();
-  ctx.translate(cx, cy);
-
-  // Rotação do disco (quando tocando)
-  if (isPlaying) {
-    _osPipAngle += 0.012;
+function stopOsPipLoop() {
+  if (osPipAnimId) {
+    cancelAnimationFrame(osPipAnimId);
+    osPipAnimId = null;
   }
-  ctx.rotate(_osPipAngle);
-
-  // Recorte circular
-  ctx.beginPath();
-  ctx.arc(0, 0, imgSize / 2, 0, Math.PI * 2);
-  ctx.clip();
-
-  if (_osPipCoverReady && _osPipCoverImg) {
-    try {
-      ctx.drawImage(_osPipCoverImg, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
-    } catch (_) {
-      drawVinylDisc(ctx, imgSize);
-    }
-  } else {
-    drawVinylDisc(ctx, imgSize);
-  }
-
-  ctx.restore();
-
-  // Aro/borda do disco
-  ctx.beginPath();
-  ctx.arc(cx, cy, imgSize / 2, 0, Math.PI * 2);
-  ctx.strokeStyle = isPlaying
-    ? "rgba(255, 45, 63, 0.9)"
-    : "rgba(255, 255, 255, 0.2)";
-  ctx.lineWidth = 3;
-  ctx.stroke();
-
-  // Buraquinho central do vinil
-  ctx.beginPath();
-  ctx.arc(cx, cy, 10, 0, Math.PI * 2);
-  ctx.fillStyle = "#0a0a10";
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-  ctx.fillStyle = isPlaying ? "#e50914" : "#555";
-  ctx.fill();
-
-  // ── Textos ──
-  const textLeft = pad + imgSize + 20;
-  const maxTextW = w - textLeft - 16;
-
-  // Badge ao vivo
-  ctx.fillStyle = "#e50914";
-  ctx.beginPath();
-  ctx.roundRect(textLeft, 20, 160, 22, 4);
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 11px sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText("● AO VIVO  •  RÁDIO CAVEIRA", textLeft + 8, 35);
-
-  // Título da música — lê do DOM correto
-  const rawTitle = $("track-title")?.textContent?.trim() || "Carregando…";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 20px sans-serif";
-  let title = rawTitle;
-  while (ctx.measureText(title).width > maxTextW && title.length > 2) {
-    title = title.slice(0, -1);
-  }
-  if (title !== rawTitle) title += "…";
-  ctx.fillText(title, textLeft, 74);
-
-  // Artista
-  const artist = $("track-artist")?.textContent?.trim() || "Rádio Caveira";
-  ctx.fillStyle = "#9090a0";
-  ctx.font = "15px sans-serif";
-  ctx.fillText(artist, textLeft, 98);
-
-  // Status play/pause com ponto pulsante
-  const now = Date.now();
-  const pulse = Math.sin(now / 400) * 0.4 + 0.6;
-  ctx.fillStyle = isPlaying
-    ? `rgba(0, 220, 80, ${pulse})`
-    : "rgba(255, 180, 0, 0.9)";
-  ctx.font = "bold 13px sans-serif";
-  ctx.fillText(
-    isPlaying ? "▶  TRANSMITINDO AGORA" : "⏸  PAUSADO",
-    textLeft,
-    126
-  );
-
-  // Barra de progresso
-  if (trackProgressState && trackProgressState.duration > 0) {
-    const diff = Math.floor((Date.now() - trackProgressState.fetchTime) / 1000);
-    const cur = Math.min(trackProgressState.duration, Math.max(0, trackProgressState.elapsed + diff));
-    const pct = Math.min(1, Math.max(0, cur / trackProgressState.duration));
-
-    const bx = textLeft;
-    const by = 148;
-    const bw = maxTextW;
-    const bh = 5;
-
-    // Fundo da barra
-    ctx.fillStyle = "rgba(255,255,255,0.12)";
-    ctx.beginPath();
-    ctx.roundRect(bx, by, bw, bh, 3);
-    ctx.fill();
-
-    // Progresso
-    if (pct > 0) {
-      const fillGrad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
-      fillGrad.addColorStop(0, "#e50914");
-      fillGrad.addColorStop(1, "#ff6b7a");
-      ctx.fillStyle = fillGrad;
-      ctx.beginPath();
-      ctx.roundRect(bx, by, bw * pct, bh, 3);
-      ctx.fill();
-    }
-
-    // Tempo
-    ctx.fillStyle = "#666676";
-    ctx.font = "12px monospace";
-    ctx.fillText(
-      `${formatSec(cur)} / ${formatSec(trackProgressState.duration)}`,
-      textLeft,
-      by + 20
-    );
-  }
-
-  // Volume (barra menor)
-  const volPct = audio ? audio.volume : 0.8;
-  const vx = textLeft;
-  const vy = h - 30;
-  const vw = maxTextW;
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
-  ctx.fillRect(vx, vy, vw, 3);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-  ctx.fillRect(vx, vy, vw * volPct, 3);
-  ctx.fillStyle = "#666676";
-  ctx.font = "11px sans-serif";
-  ctx.fillText(`🔊 ${Math.round(volPct * 100)}%`, vx, vy - 6);
 }
 
-function drawVinylDisc(ctx, size) {
-  // Disco de vinil padrão quando não há capa
-  ctx.fillStyle = "#1a0a0a";
-  ctx.fillRect(-size / 2, -size / 2, size, size);
-
-  // Ranhuras do vinil
-  for (let r = size * 0.18; r < size / 2 - 4; r += 8) {
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 45, 63, ${0.06 + (r / size) * 0.04})`;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-
-  // Label central
-  ctx.beginPath();
-  ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2);
-  ctx.fillStyle = "#e50914";
-  ctx.fill();
-
-  // Caveira símbolo
-  ctx.fillStyle = "#fff";
-  ctx.font = `bold ${Math.floor(size * 0.15)}px sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("💀", 0, 4);
-  ctx.textBaseline = "alphabetic";
-}
-
-
-
+// Renderizador da tela do PiP Nativo
 function updateOsPipCanvas() {
   if (!osPipCtx || !osPipCanvas) return;
   const w = osPipCanvas.width;
   const h = osPipCanvas.height;
 
-  // Fundo degradê escuro
+  // 1. Fundo degradê metálico escuro com tons avermelhados
   const grad = osPipCtx.createLinearGradient(0, 0, w, h);
-  grad.addColorStop(0, "#16161d");
-  grad.addColorStop(0.5, "#0b0b0f");
-  grad.addColorStop(1, "#280508");
+  grad.addColorStop(0, "#13131a");
+  grad.addColorStop(0.5, "#0b0b0e");
+  grad.addColorStop(1, "#260408");
   osPipCtx.fillStyle = grad;
   osPipCtx.fillRect(0, 0, w, h);
 
-  // Bordas sutis vermelhas
-  osPipCtx.strokeStyle = "rgba(255, 45, 63, 0.4)";
-  osPipCtx.lineWidth = 6;
-  osPipCtx.strokeRect(3, 3, w - 6, h - 6);
+  // 2. Borda externa neon vermelha
+  osPipCtx.strokeStyle = "rgba(255, 45, 63, 0.55)";
+  osPipCtx.lineWidth = 5;
+  osPipCtx.strokeRect(2.5, 2.5, w - 5, h - 5);
 
-  // Desenha a capa da música
-  const coverImg = $("disc-cover") || $("pip-cover-img");
+  // 3. Capa da música (esquerda)
   const pad = 24;
-  const imgSize = h - pad * 2;
-  
-  if (coverImg && coverImg.complete && coverImg.naturalWidth !== 0) {
-    try {
-      osPipCtx.save();
-      osPipCtx.beginPath();
-      // Arredonda a capa
-      osPipCtx.roundRect(pad, pad, imgSize, imgSize, 14);
-      osPipCtx.clip();
-      osPipCtx.drawImage(coverImg, pad, pad, imgSize, imgSize);
-      osPipCtx.restore();
+  const imgSize = h - pad * 2; // 240 x 240
+  drawPipCover(pad, pad, imgSize);
 
-      // Borda vermelha ao redor da capa
-      osPipCtx.strokeStyle = "rgba(255, 45, 63, 0.7)";
-      osPipCtx.lineWidth = 3;
-      osPipCtx.stroke();
-    } catch (_) {
-      // Fallback se CORS bloquear o canvas
-      drawFallbackCover(pad, imgSize);
-    }
-  } else {
-    drawFallbackCover(pad, imgSize);
-  }
-
-  function drawFallbackCover(x, s) {
-    osPipCtx.fillStyle = "#1c1c24";
-    osPipCtx.fillRect(x, pad, s, s);
-    osPipCtx.fillStyle = "#ff2d3f";
-    osPipCtx.font = "bold 32px sans-serif";
-    osPipCtx.textAlign = "center";
-    osPipCtx.fillText("💀", x + s / 2, pad + s / 2 + 10);
-  }
-
-  // Textos e Metadados
+  // 4. Seção de Informações (direita)
   const textLeft = pad + imgSize + 20;
   const maxTextW = w - textLeft - 20;
 
-  // Badge "AO VIVO • RÁDIO CAVEIRA"
-  osPipCtx.fillStyle = "#ff2d3f";
-  osPipCtx.font = "bold 15px sans-serif";
-  osPipCtx.textAlign = "left";
-  osPipCtx.fillText("● AO VIVO • RÁDIO CAVEIRA", textLeft, 56);
-
-  // Título da Música
-  const trackTitle = $("pip-track-title")?.textContent || $("track-title")?.textContent || "Carregando som…";
-  osPipCtx.fillStyle = "#ffffff";
-  osPipCtx.font = "bold 24px sans-serif";
-  let displayTitle = trackTitle;
-  if (osPipCtx.measureText(displayTitle).width > maxTextW) {
-    while (osPipCtx.measureText(displayTitle + "…").width > maxTextW && displayTitle.length > 0) {
-      displayTitle = displayTitle.slice(0, -1);
-    }
-    displayTitle += "…";
-  }
-  osPipCtx.fillText(displayTitle, textLeft, 105);
-
-  // Artista
-  const trackArtist = $("pip-track-artist")?.textContent || $("track-artist")?.textContent || "Rádio Caveira";
-  osPipCtx.fillStyle = "#b0b0bc";
-  osPipCtx.font = "18px sans-serif";
-  osPipCtx.fillText(trackArtist, textLeft, 142);
-
-  // Status de Reprodução
+  // Header: Badge AO VIVO + Ondas/Barras de Som Animadas
   osPipCtx.fillStyle = isPlaying ? "#00ff66" : "#ffaa00";
-  osPipCtx.font = "bold 16px sans-serif";
-  osPipCtx.fillText(isPlaying ? "▶ TRANSMITINDO AGORA" : "⏸ PAUSADO", textLeft, 185);
+  osPipCtx.font = "bold 14px 'Outfit', -apple-system, sans-serif";
+  osPipCtx.textAlign = "left";
+  osPipCtx.fillText(isPlaying ? "● AO VIVO • RÁDIO CAVEIRA" : "○ PAUSADO • RÁDIO CAVEIRA", textLeft, 52);
 
-  // Barra de progresso se houver duração
+  // Barras animadas de equalizador
+  const eqStartX = textLeft + maxTextW - 32;
+  for (let i = 0; i < 5; i++) {
+    let barH = 4;
+    if (isPlaying) {
+      const t = Date.now() * 0.007;
+      barH = 4 + Math.abs(Math.sin(t + i * 1.3)) * 14 + (i % 2 === 0 ? 3 : 0);
+    }
+    osPipCtx.fillStyle = isPlaying ? "#00ff66" : "rgba(255, 170, 0, 0.4)";
+    osPipCtx.fillRect(eqStartX + i * 6, 52 - barH, 4, barH);
+  }
+
+  // Título da Música (com Efeito Letreiro / Marquee contínuo quando o nome for longo)
+  let rawTitle = $("pip-track-title")?.textContent || $("track-title")?.textContent || $("sticky-title")?.textContent || "Carregando som…";
+  if (rawTitle === "Carregando som…" && isPlaying) {
+    rawTitle = "Rádio Caveira • Ao Vivo";
+  }
+
+  osPipCtx.save();
+  osPipCtx.beginPath();
+  osPipCtx.rect(textLeft, 68, maxTextW, 44);
+  osPipCtx.clip();
+
+  osPipCtx.fillStyle = "#ffffff";
+  osPipCtx.font = "bold 23px 'Outfit', -apple-system, sans-serif";
+  osPipCtx.shadowColor = "rgba(255, 45, 63, 0.5)";
+  osPipCtx.shadowBlur = 8;
+
+  const titleW = osPipCtx.measureText(rawTitle).width;
+  if (titleW > maxTextW) {
+    const spacer = "      •      ";
+    const spacerW = osPipCtx.measureText(spacer).width;
+    const fullScrollW = titleW + spacerW;
+    const scrollPos = osPipMarqueeStep % fullScrollW;
+    osPipCtx.fillText(rawTitle, textLeft - scrollPos, 98);
+    osPipCtx.fillText(spacer, textLeft - scrollPos + titleW, 98);
+    osPipCtx.fillText(rawTitle, textLeft - scrollPos + fullScrollW, 98);
+    osPipMarqueeStep += 1.3; // Faz o letreiro literalmente "andar" suavemente
+  } else {
+    osPipCtx.fillText(rawTitle, textLeft, 98);
+  }
+  osPipCtx.restore();
+
+  // Artista / Banda
+  const rawArtist = $("pip-track-artist")?.textContent || $("track-artist")?.textContent || $("sticky-artist")?.textContent || "Rádio Caveira";
+  osPipCtx.fillStyle = "#b4b4c4";
+  osPipCtx.font = "600 17px 'Outfit', -apple-system, sans-serif";
+  osPipCtx.fillText(rawArtist, textLeft, 136);
+
+  // Status de Transmissão
+  osPipCtx.fillStyle = isPlaying ? "#00ff66" : "#ffaa00";
+  osPipCtx.font = "bold 15px 'Outfit', -apple-system, sans-serif";
+  osPipCtx.fillText(isPlaying ? "▶ TRANSMITINDO AGORA" : "⏸ PAUSADO", textLeft, 178);
+
+  // Barra de Progresso Dinâmica
   if (trackProgressState && trackProgressState.duration > 0) {
-    const diff = Math.floor((Date.now() - trackProgressState.fetchTime) / 1000);
+    const diff = isPlaying ? Math.floor((Date.now() - trackProgressState.fetchTime) / 1000) : 0;
     const curElapsed = Math.min(trackProgressState.duration, Math.max(0, trackProgressState.elapsed + diff));
     const pct = Math.min(1, Math.max(0, curElapsed / trackProgressState.duration));
 
     const barW = maxTextW;
-    const barH = 6;
-    const barY = 215;
+    const barH = 7;
+    const barY = 208;
 
     // Fundo da barra
-    osPipCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
-    osPipCtx.fillRect(textLeft, barY, barW, barH);
+    osPipCtx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    osPipCtx.beginPath();
+    osPipCtx.roundRect(textLeft, barY, barW, barH, 4);
+    osPipCtx.fill();
 
-    // Preenchimento
-    osPipCtx.fillStyle = "#ff2d3f";
-    osPipCtx.fillRect(textLeft, barY, barW * pct, barH);
+    // Preenchimento com gradiente vermelho
+    const pGrad = osPipCtx.createLinearGradient(textLeft, 0, textLeft + barW, 0);
+    pGrad.addColorStop(0, "#ff2d3f");
+    pGrad.addColorStop(1, "#ff6b7b");
+    osPipCtx.fillStyle = pGrad;
+    osPipCtx.beginPath();
+    osPipCtx.roundRect(textLeft, barY, Math.max(7, barW * pct), barH, 4);
+    osPipCtx.fill();
 
-    // Tempo
-    osPipCtx.fillStyle = "#888896";
-    osPipCtx.font = "13px monospace";
-    osPipCtx.fillText(`${formatSec(curElapsed)} / ${formatSec(trackProgressState.duration)}`, textLeft, barY + 24);
+    // Cronômetro formatado
+    osPipCtx.fillStyle = "#9898a8";
+    osPipCtx.font = "bold 13px monospace";
+    osPipCtx.fillText(`${formatSec(curElapsed)} / ${formatSec(trackProgressState.duration)}`, textLeft, barY + 25);
+  } else {
+    // Caso stream sem duração fixa
+    osPipCtx.fillStyle = "#777788";
+    osPipCtx.font = "13px 'Outfit', -apple-system, sans-serif";
+    osPipCtx.fillText(isPlaying ? "Transmissão 24h sem interrupções ⚡" : "Toque em play no site para ouvir", textLeft, 225);
   }
 }
 
+// Desenha a capa real ou o emblemático escudo da Rádio Caveira
+function drawPipCover(x, y, s) {
+  if (osPipCoverLoaded && osPipCoverImage) {
+    try {
+      osPipCtx.save();
+      osPipCtx.beginPath();
+      osPipCtx.roundRect(x, y, s, s, 16);
+      osPipCtx.clip();
+      osPipCtx.drawImage(osPipCoverImage, x, y, s, s);
+      osPipCtx.restore();
+
+      // Borda vermelha ao redor da capa
+      osPipCtx.strokeStyle = "rgba(255, 45, 63, 0.85)";
+      osPipCtx.lineWidth = 3;
+      osPipCtx.beginPath();
+      osPipCtx.roundRect(x, y, s, s, 16);
+      osPipCtx.stroke();
+      return;
+    } catch (_) {
+      // Se houver qualquer bloqueio de imagem externa no canvas, usa fallback
+    }
+  }
+
+  // FALLBACK EMBLEMÁTICO DA RÁDIO CAVEIRA
+  osPipCtx.save();
+  osPipCtx.beginPath();
+  osPipCtx.roundRect(x, y, s, s, 16);
+  osPipCtx.clip();
+
+  // Fundo com brilho radial
+  const bgGrad = osPipCtx.createRadialGradient(x + s / 2, y + s / 2, 8, x + s / 2, y + s / 2, s * 0.75);
+  bgGrad.addColorStop(0, "#2c0408");
+  bgGrad.addColorStop(0.55, "#14141a");
+  bgGrad.addColorStop(1, "#0a0a0d");
+  osPipCtx.fillStyle = bgGrad;
+  osPipCtx.fillRect(x, y, s, s);
+
+  // Sulcos de Vinil
+  osPipCtx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+  osPipCtx.lineWidth = 1.5;
+  [28, 48, 68, 88, 108].forEach((r) => {
+    osPipCtx.beginPath();
+    osPipCtx.arc(x + s / 2, y + s / 2, r, 0, Math.PI * 2);
+    osPipCtx.stroke();
+  });
+
+  // Caveira com efeito neon
+  osPipCtx.shadowColor = "#ff2d3f";
+  osPipCtx.shadowBlur = 18;
+  osPipCtx.font = "62px sans-serif";
+  osPipCtx.textAlign = "center";
+  osPipCtx.fillText("💀", x + s / 2, y + s / 2 - 10);
+
+  // Nome RÁDIO CAVEIRA (Substituição definitiva de Caveira Mix)
+  osPipCtx.shadowColor = "rgba(255, 45, 63, 0.9)";
+  osPipCtx.shadowBlur = 10;
+  osPipCtx.fillStyle = "#ff2d3f";
+  osPipCtx.font = "900 15px 'Outfit', sans-serif";
+  osPipCtx.fillText("RÁDIO", x + s / 2, y + s / 2 + 58);
+
+  osPipCtx.fillStyle = "#ffffff";
+  osPipCtx.font = "900 21px 'Outfit', sans-serif";
+  osPipCtx.fillText("CAVEIRA", x + s / 2, y + s / 2 + 82);
+
+  osPipCtx.restore();
+
+  // Moldura externa da capa
+  osPipCtx.strokeStyle = "rgba(255, 45, 63, 0.75)";
+  osPipCtx.lineWidth = 3;
+  osPipCtx.beginPath();
+  osPipCtx.roundRect(x, y, s, s, 16);
+  osPipCtx.stroke();
+}
+
+// MediaSession API: integra com controles nativos de mídia do Windows/SO
+function setupMediaSession() {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.setActionHandler("play", () => play());
+    navigator.mediaSession.setActionHandler("pause", () => pause());
+    navigator.mediaSession.setActionHandler("stop", () => pause());
+  } catch (_) {}
+}
+
+function updateMediaSession(title, artist, album, coverUrl) {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title || "Rádio Caveira Ao Vivo",
+      artist: artist || "Rádio Caveira",
+      album: album || "Rádio Caveira",
+      artwork: coverUrl
+        ? [{ src: coverUrl, sizes: "512x512", type: "image/jpeg" }]
+        : [{ src: "/live/assets/logo.png", sizes: "512x512", type: "image/png" }],
+    });
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  } catch (_) {}
+}
+
+function updateMediaSessionPlaybackState() {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  } catch (_) {}
+}
+
+// Alterna PiP nativo sobre a Área de Trabalho
 async function toggleOsPictureInPicture() {
   setupOsPip();
   if (!osPipVideo) return;
 
   const btnToggleFloating = $("btn-toggle-floating-player");
   const pipBtnOs = $("pip-btn-os-pip");
+  const stickyBtnOs = $("sticky-btn-os-pip");
 
   const updateBtnState = (active) => {
-    [btnToggleFloating, pipBtnOs].forEach((btn) => {
+    [btnToggleFloating, pipBtnOs, stickyBtnOs].forEach((btn) => {
       if (!btn) return;
       if (active) {
         btn.classList.add("active");
@@ -1879,12 +1860,12 @@ async function toggleOsPictureInPicture() {
   try {
     if (document.pictureInPictureElement) {
       await document.exitPictureInPicture();
+      stopOsPipLoop();
       updateBtnState(false);
       if (window.showToast) window.showToast("Mini player de tela fechado.", "info");
       return;
     }
 
-    // Verifica suporte
     if (!document.pictureInPictureEnabled) {
       if (window.showToast) {
         window.showToast("⚠️ Seu navegador não suporta Picture-in-Picture. Use Chrome ou Edge.", "warning");
@@ -1892,12 +1873,20 @@ async function toggleOsPictureInPicture() {
       return;
     }
 
+    // Se os dados da música ainda não foram carregados, puxa agora
+    const currentTrack = $("track-title")?.textContent;
+    if (!currentTrack || currentTrack === "Carregando som…") {
+      updateNowPlaying();
+    }
+
     updateOsPipCanvas();
     await osPipVideo.play();
     await osPipVideo.requestPictureInPicture();
+    startOsPipLoop();
     updateBtnState(true);
+
     if (window.showToast) {
-      window.showToast("🖥️ Mini Player flutuando na Área de Trabalho! Funciona sobre outros sites e programas.", "success");
+      window.showToast("🖥️ Mini Player flutuando sobre a Área de Trabalho e outros programas!", "success");
     }
   } catch (err) {
     console.error("Erro ao abrir Picture-in-Picture:", err);
