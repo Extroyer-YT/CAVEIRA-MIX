@@ -610,6 +610,9 @@
       </div>
       <span class="pip-header-label"><span class="pulse-dot"></span> RÁDIO CAVEIRA AO VIVO</span>
       <div class="pip-actions-top">
+        <button id="pip-btn-os-pip" class="pip-action-btn" type="button" title="Abrir na Área de Trabalho (sobre outros sites/programas)" aria-label="Modo Flutuante na Área de Trabalho">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><rect x="13" y="9" width="7" height="5" rx="1" fill="currentColor" opacity="0.3"/></svg>
+        </button>
         <button id="pip-btn-expand" class="pip-action-btn" type="button" title="Ir para o Player Principal" aria-label="Expandir Player">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
         </button>
@@ -655,6 +658,38 @@
           </div>
         </div>
       </div>
+    </div>
+  </aside>
+
+  <!-- Mini-Player Fixo no Rodapé (Sticky Player) -->
+  <aside class="sticky-player glass" id="sticky-player" aria-label="Controle rápido da rádio">
+    <div class="sticky-track">
+      <img id="sticky-cover" class="sticky-cover" src="/live/assets/logo.png" alt="Música atual" />
+      <div class="sticky-info">
+        <div class="sticky-now-badge"><span class="pulse-dot"></span> NO AR</div>
+        <p id="sticky-title" class="sticky-title">Carregando…</p>
+        <p id="sticky-artist" class="sticky-artist">Rádio Caveira</p>
+      </div>
+    </div>
+
+    <div class="sticky-center">
+      <div class="sticky-controls">
+        <button id="sticky-btn-play" class="sticky-btn-play" aria-label="Play / Pause">▶</button>
+      </div>
+      <div class="sticky-progress-wrap" id="sticky-progress-wrap">
+        <div class="sticky-progress-bar">
+          <div class="sticky-progress-fill" id="sticky-progress-fill"></div>
+        </div>
+        <span class="sticky-time" id="sticky-time">00:00 / 00:00</span>
+      </div>
+    </div>
+
+    <div class="sticky-volume-wrap">
+      <span class="sticky-vol-ico">🔊</span>
+      <input id="sticky-volume" type="range" min="0" max="100" value="80" aria-label="Volume" />
+      <button id="sticky-btn-os-pip" class="sticky-scroll-top" type="button" aria-label="Flutuante na Área de Trabalho" title="Abrir na Área de Trabalho (sobre outros sites)">🗔</button>
+      <button id="sticky-scroll-top" class="sticky-scroll-top" type="button" aria-label="Voltar ao topo" title="Ver player completo">▲</button>
+      <button id="sticky-btn-close" class="sticky-btn-close" type="button" aria-label="Fechar Mini Player" title="Ocultar Mini Player">✕</button>
     </div>
   </aside>
 

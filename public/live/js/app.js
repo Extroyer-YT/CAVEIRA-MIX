@@ -199,6 +199,8 @@ document.addEventListener("visibilitychange", () => {
 /* ---- API pública do player ---- */
 function updatePlayButtonUI() {
   btnPlay.textContent = isPlaying ? "⏸" : "▶";
+  const stickyBtn = $("sticky-btn-play");
+  if (stickyBtn) stickyBtn.textContent = isPlaying ? "⏸" : "▶";
   const pipBtn = $("pip-btn-play");
   if (pipBtn) pipBtn.textContent = isPlaying ? "⏸" : "▶";
   const pipDisc = $("pip-disc-vinyl");
@@ -220,6 +222,7 @@ function play() {
     lsmSetStatus("");
     lsmStartLagWatcher();
     vmu.ensureInit(audio);
+    updateOsPipCanvas();
   }).catch(() => {
     lsmSetStatus("Não foi possível iniciar. Toque no botão novamente.");
   });
@@ -233,16 +236,41 @@ function pause() {
   equalizer.classList.remove("active");
   lsmStopLagWatcher();
   lsmClearStallTimer();
+  updateOsPipCanvas();
 }
 
 btnPlay.addEventListener("click", () => (isPlaying ? pause() : play()));
 volume.addEventListener("input", () => {
   const v = volume.value;
   audio.volume = v / 100;
+  const sv = $("sticky-volume");
+  if (sv) sv.value = v;
   const pv = $("pip-volume-slider");
   if (pv) pv.value = v;
 });
 audio.volume = volume.value / 100;
+
+// Sticky Player listeners
+const stickyBtn = $("sticky-btn-play");
+if (stickyBtn) stickyBtn.addEventListener("click", () => (isPlaying ? pause() : play()));
+
+const stickyVol = $("sticky-volume");
+if (stickyVol) {
+  stickyVol.addEventListener("input", () => {
+    const v = stickyVol.value;
+    audio.volume = v / 100;
+    if (volume) volume.value = v;
+    const pv = $("pip-volume-slider");
+    if (pv) pv.value = v;
+  });
+}
+
+const stickyScrollTop = $("sticky-scroll-top");
+if (stickyScrollTop) {
+  stickyScrollTop.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
 
 // Mini Player Flutuante listeners (Play overlay & volume)
 const pipBtnPlay = $("pip-btn-play");
@@ -254,6 +282,8 @@ if (pipVolumeSlider) {
     const v = pipVolumeSlider.value;
     audio.volume = v / 100;
     if (volume) volume.value = v;
+    const sv = $("sticky-volume");
+    if (sv) sv.value = v;
   });
 }
 
@@ -468,12 +498,15 @@ function formatSec(sec) {
 
 function tickProgressBar() {
   const wrap = $("track-progress-wrap");
+  const stickyWrap = $("sticky-progress-wrap");
   const pipWrap = $("floating-pip-player");
   if (!trackProgressState.duration || trackProgressState.duration <= 0) {
     if (wrap) wrap.style.display = "none";
+    if (stickyWrap) stickyWrap.style.display = "none";
     return;
   }
   if (wrap) wrap.style.display = "block";
+  if (stickyWrap) stickyWrap.style.display = "flex";
 
   const diff = Math.floor((Date.now() - trackProgressState.fetchTime) / 1000);
   const curElapsed = Math.min(trackProgressState.duration, Math.max(0, trackProgressState.elapsed + diff));
@@ -487,6 +520,12 @@ function tickProgressBar() {
 
   const elTot = $("track-time-total");
   if (elTot) elTot.textContent = formatSec(trackProgressState.duration);
+
+  const stickyFill = $("sticky-progress-fill");
+  if (stickyFill) stickyFill.style.width = pct + "%";
+
+  const stickyTime = $("sticky-time");
+  if (stickyTime) stickyTime.textContent = `${formatSec(curElapsed)} / ${formatSec(trackProgressState.duration)}`;
 
   const pipFill = $("pip-progress-fill");
   if (pipFill) pipFill.style.width = pct + "%";
@@ -530,6 +569,11 @@ async function updateNowPlaying() {
 
     $("status-online").textContent = data.is_online === false ? "OFFLINE" : "ONLINE";
 
+    const stickyTitle = $("sticky-title");
+    if (stickyTitle) stickyTitle.textContent = title;
+    const stickyArtist = $("sticky-artist");
+    if (stickyArtist) stickyArtist.textContent = artist;
+
     const pipTitle = $("pip-track-title");
     if (pipTitle) pipTitle.textContent = title;
     const pipArtist = $("pip-track-artist");
@@ -546,10 +590,14 @@ async function updateNowPlaying() {
       const cover = await fetchCover(artist, title, fallbackArt);
       discCover.src = cover;
 
+      const stickyCover = $("sticky-cover");
+      if (stickyCover) stickyCover.src = cover;
+
       const pipCover = $("pip-cover-img");
       if (pipCover) pipCover.src = cover;
 
       loadArtistInfo(artist);
+      updateOsPipCanvas();
     }
 
     // Expõe dados reais ao módulo do mapa (feed ao vivo usa isso)
@@ -1514,12 +1562,259 @@ function initFloatingPipPlayer() {
 }
 
 /* ============================================================
+   STICKY PLAYER DO RODAPÉ (OBSERVER & CONTROLE)
+   ============================================================ */
+function initStickyObserver() {
+  const sticky = $("sticky-player");
+  const hero = $("hero");
+  const btnCloseSticky = $("sticky-btn-close");
+  const btnScrollTop = $("sticky-scroll-top");
+  const btnStickyOsPip = $("sticky-btn-os-pip");
+
+  if (!sticky) return;
+
+  let stickyDismissed = false;
+
+  if (btnCloseSticky) {
+    btnCloseSticky.addEventListener("click", () => {
+      stickyDismissed = true;
+      sticky.classList.remove("visible");
+    });
+  }
+
+  if (btnScrollTop) {
+    btnScrollTop.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  if (btnStickyOsPip) {
+    btnStickyOsPip.addEventListener("click", () => {
+      toggleOsPictureInPicture();
+    });
+  }
+
+  if (hero && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (stickyDismissed) return;
+        if (!en.isIntersecting) {
+          sticky.classList.add("visible");
+        } else {
+          sticky.classList.remove("visible");
+        }
+      });
+    }, { threshold: 0.15 });
+    io.observe(hero);
+  } else if (hero) {
+    window.addEventListener("scroll", () => {
+      if (stickyDismissed) return;
+      if (window.scrollY > 350) sticky.classList.add("visible");
+      else sticky.classList.remove("visible");
+    });
+  }
+}
+
+/* ============================================================
+   PICTURE-IN-PICTURE NATIVO DO SISTEMA OPERACIONAL / DESKTOP
+   Permite que o mini player flutue SOBRE QUALQUER PROGRAMA OU ABA
+   ============================================================ */
+let osPipVideo = null;
+let osPipCanvas = null;
+let osPipCtx = null;
+let osPipStream = null;
+
+function setupOsPip() {
+  if (osPipVideo) return;
+  osPipCanvas = document.createElement("canvas");
+  osPipCanvas.width = 512;
+  osPipCanvas.height = 288; // proporção 16:9
+  osPipCtx = osPipCanvas.getContext("2d");
+
+  osPipVideo = document.createElement("video");
+  osPipVideo.muted = true;
+  osPipVideo.playsInline = true;
+
+  try {
+    osPipStream = osPipCanvas.captureStream(20);
+    osPipVideo.srcObject = osPipStream;
+  } catch (e) {
+    console.warn("Canvas captureStream não suportado para PiP nativo:", e);
+  }
+
+  updateOsPipCanvas();
+
+  const pipBtnOs = $("pip-btn-os-pip");
+  if (pipBtnOs) {
+    pipBtnOs.addEventListener("click", () => {
+      toggleOsPictureInPicture();
+    });
+  }
+
+  // Se o usuário fechar o PiP nativo do sistema
+  osPipVideo.addEventListener("leavepictureinpicture", () => {
+    const pipBtnOs = $("pip-btn-os-pip");
+    if (pipBtnOs) pipBtnOs.classList.remove("active");
+  });
+}
+
+function updateOsPipCanvas() {
+  if (!osPipCtx || !osPipCanvas) return;
+  const w = osPipCanvas.width;
+  const h = osPipCanvas.height;
+
+  // Fundo degradê escuro
+  const grad = osPipCtx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, "#16161d");
+  grad.addColorStop(0.5, "#0b0b0f");
+  grad.addColorStop(1, "#280508");
+  osPipCtx.fillStyle = grad;
+  osPipCtx.fillRect(0, 0, w, h);
+
+  // Bordas sutis vermelhas
+  osPipCtx.strokeStyle = "rgba(255, 45, 63, 0.4)";
+  osPipCtx.lineWidth = 6;
+  osPipCtx.strokeRect(3, 3, w - 6, h - 6);
+
+  // Desenha a capa da música
+  const coverImg = $("disc-cover") || $("pip-cover-img");
+  const pad = 24;
+  const imgSize = h - pad * 2;
+  
+  if (coverImg && coverImg.complete && coverImg.naturalWidth !== 0) {
+    try {
+      osPipCtx.save();
+      osPipCtx.beginPath();
+      // Arredonda a capa
+      osPipCtx.roundRect(pad, pad, imgSize, imgSize, 14);
+      osPipCtx.clip();
+      osPipCtx.drawImage(coverImg, pad, pad, imgSize, imgSize);
+      osPipCtx.restore();
+
+      // Borda vermelha ao redor da capa
+      osPipCtx.strokeStyle = "rgba(255, 45, 63, 0.7)";
+      osPipCtx.lineWidth = 3;
+      osPipCtx.stroke();
+    } catch (_) {
+      // Fallback se CORS bloquear o canvas
+      drawFallbackCover(pad, imgSize);
+    }
+  } else {
+    drawFallbackCover(pad, imgSize);
+  }
+
+  function drawFallbackCover(x, s) {
+    osPipCtx.fillStyle = "#1c1c24";
+    osPipCtx.fillRect(x, pad, s, s);
+    osPipCtx.fillStyle = "#ff2d3f";
+    osPipCtx.font = "bold 32px sans-serif";
+    osPipCtx.textAlign = "center";
+    osPipCtx.fillText("💀", x + s / 2, pad + s / 2 + 10);
+  }
+
+  // Textos e Metadados
+  const textLeft = pad + imgSize + 20;
+  const maxTextW = w - textLeft - 20;
+
+  // Badge "AO VIVO • RÁDIO CAVEIRA"
+  osPipCtx.fillStyle = "#ff2d3f";
+  osPipCtx.font = "bold 15px sans-serif";
+  osPipCtx.textAlign = "left";
+  osPipCtx.fillText("● AO VIVO • RÁDIO CAVEIRA", textLeft, 56);
+
+  // Título da Música
+  const trackTitle = $("pip-track-title")?.textContent || $("track-title")?.textContent || "Carregando som…";
+  osPipCtx.fillStyle = "#ffffff";
+  osPipCtx.font = "bold 24px sans-serif";
+  let displayTitle = trackTitle;
+  if (osPipCtx.measureText(displayTitle).width > maxTextW) {
+    while (osPipCtx.measureText(displayTitle + "…").width > maxTextW && displayTitle.length > 0) {
+      displayTitle = displayTitle.slice(0, -1);
+    }
+    displayTitle += "…";
+  }
+  osPipCtx.fillText(displayTitle, textLeft, 105);
+
+  // Artista
+  const trackArtist = $("pip-track-artist")?.textContent || $("track-artist")?.textContent || "Rádio Caveira";
+  osPipCtx.fillStyle = "#b0b0bc";
+  osPipCtx.font = "18px sans-serif";
+  osPipCtx.fillText(trackArtist, textLeft, 142);
+
+  // Status de Reprodução
+  osPipCtx.fillStyle = isPlaying ? "#00ff66" : "#ffaa00";
+  osPipCtx.font = "bold 16px sans-serif";
+  osPipCtx.fillText(isPlaying ? "▶ TRANSMITINDO AGORA" : "⏸ PAUSADO", textLeft, 185);
+
+  // Barra de progresso se houver duração
+  if (trackProgressState && trackProgressState.duration > 0) {
+    const diff = Math.floor((Date.now() - trackProgressState.fetchTime) / 1000);
+    const curElapsed = Math.min(trackProgressState.duration, Math.max(0, trackProgressState.elapsed + diff));
+    const pct = Math.min(1, Math.max(0, curElapsed / trackProgressState.duration));
+
+    const barW = maxTextW;
+    const barH = 6;
+    const barY = 215;
+
+    // Fundo da barra
+    osPipCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    osPipCtx.fillRect(textLeft, barY, barW, barH);
+
+    // Preenchimento
+    osPipCtx.fillStyle = "#ff2d3f";
+    osPipCtx.fillRect(textLeft, barY, barW * pct, barH);
+
+    // Tempo
+    osPipCtx.fillStyle = "#888896";
+    osPipCtx.font = "13px monospace";
+    osPipCtx.fillText(`${formatSec(curElapsed)} / ${formatSec(trackProgressState.duration)}`, textLeft, barY + 24);
+  }
+}
+
+async function toggleOsPictureInPicture() {
+  setupOsPip();
+  if (!osPipVideo) return;
+
+  const pipBtnOs = $("pip-btn-os-pip");
+
+  try {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+      if (pipBtnOs) pipBtnOs.classList.remove("active");
+      if (window.showToast) window.showToast("Mini player de tela fechado.", "info");
+      return;
+    }
+
+    updateOsPipCanvas();
+    await osPipVideo.play();
+    await osPipVideo.requestPictureInPicture();
+    if (pipBtnOs) pipBtnOs.classList.add("active");
+    if (window.showToast) {
+      window.showToast("🖥️ Mini Player fixado sobre a Área de Trabalho e outros sites!", "success");
+    }
+  } catch (err) {
+    console.error("Erro ao abrir Picture-in-Picture:", err);
+    // Se o Picture-in-Picture do sistema não for suportado ou for bloqueado
+    // Ativa o mini player flutuante integrado da página
+    const pip = $("floating-pip-player");
+    if (pip) {
+      pip.classList.add("pip-active");
+      if (window.showToast) {
+        window.showToast("Mini Player flutuante ativado na tela!", "success");
+      }
+    }
+  }
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 $("year").textContent = new Date().getFullYear();
 setupShare();
 initParticles();
 initFloatingPipPlayer();
+initStickyObserver();
+setupOsPip();
 tickClock(); setInterval(tickClock, 1000);
 loadWeather(); setInterval(loadWeather, 10 * 60 * 1000);
 loadNews(); setInterval(loadNews, 15 * 60 * 1000);
