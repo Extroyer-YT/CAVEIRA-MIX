@@ -34,7 +34,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.letreiro_led;
 INSERT INTO public.letreiro_led (mensagem, autor, tipo, cor_led, ordem, ativo)
 VALUES 
   (
-    '🤘 BEM-VINDO À CAVEIRA MIX! • A SUA RÁDIO ROCK, METAL & UNDERGROUND 24 HORAS NO AR!',
+    '🤘 BEM-VINDO À RÁDIO CAVEIRA! • A SUA RÁDIO ROCK, METAL & UNDERGROUND 24 HORAS NO AR!',
     'Administração',
     'aviso',
     'red',
@@ -42,7 +42,7 @@ VALUES
     true
   ),
   (
-    '📢 PEÇA SEU SOM: Clique na aba "Pedidos de Músicas" no menu e vote no seu som favorito do acervo!',
+    '🔥 PEÇA SUA MÚSICA: Use o formulário abaixo para tocar seu som favorito na programação!',
     'Programação',
     'promocao',
     'amber',

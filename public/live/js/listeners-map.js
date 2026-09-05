@@ -578,7 +578,7 @@
       // Template 3: conexão ao vivo
       templates.push(
         () => `conectou à rádio agora 📡`,
-        () => `está ouvindo a Caveira Mix 💀`,
+        () => `está ouvindo a Rádio Caveira 💀`,
       );
 
       const actionFn = templates[Math.floor(Math.random() * templates.length)];

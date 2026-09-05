@@ -109,7 +109,7 @@
         capa_url: "/live/assets/logo.png",
         duracao: "31:10",
         episodio_numero: 3,
-        host: "Equipe Caveira Mix",
+        host: "Equipe Rádio Caveira",
         destaque: false,
       },
     ];
@@ -145,11 +145,11 @@
         </div>
         <div class="podcast-details">
           <div class="podcast-meta-row">
-            <span class="podcast-host">🎙️ ${pod.host || "Caveira Mix"}</span>
+            <span class="podcast-host">🎙️ ${pod.host || "Rádio Caveira"}</span>
             <span class="podcast-duration">⏱️ ${pod.duracao || "--:--"}</span>
           </div>
           <h4 class="podcast-title">${pod.titulo}</h4>
-          <p class="podcast-desc">${pod.descricao || "Ouça agora o episódio completo na Caveira Mix."}</p>
+          <p class="podcast-desc">${pod.descricao || "Ouça agora o episódio completo na Rádio Caveira."}</p>
           <div class="podcast-actions-row">
             <button class="btn-play-episode ${isPlayingThis ? "is-playing" : ""}" data-pod-id="${pod.id}">
               <span>${isPlayingThis ? "Pausar Episódio" : "Ouvir Episódio 🤘"}</span>
@@ -237,7 +237,7 @@
   function updatePlayerUI(pod) {
     if (!pod) return;
     if (playerTitle) playerTitle.textContent = pod.titulo;
-    if (playerHost) playerHost.textContent = `🎙️ ${pod.host || "Caveira Mix"} • EP #${pod.episodio_numero || ""}`;
+    if (playerHost) playerHost.textContent = `🎙️ ${pod.host || "Rádio Caveira"} • EP #${pod.episodio_numero || ""}`;
     if (playerCover) playerCover.src = pod.capa_url || "/live/assets/logo.png";
     if (btnPlayPause) btnPlayPause.textContent = isPodcastPlaying ? "⏸" : "▶";
 

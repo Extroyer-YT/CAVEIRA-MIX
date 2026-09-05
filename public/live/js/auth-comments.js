@@ -385,7 +385,7 @@
         id: "def-1",
         nome: "Diego Metalhead",
         avatar_url: "💀",
-        mensagem: "Salve galera da Caveira Mix! Essa rádio é pedrada pura, sintonizado aqui de Curitiba! 🤘🔥",
+        mensagem: "Salve galera da Rádio Caveira! Essa rádio é pedrada pura, sintonizado aqui de Curitiba! 🤘🔥",
         rock_badge: "🤘 Headbanger",
         likes_count: 5,
         created_at: new Date(Date.now() - 45 * 60000).toISOString(),

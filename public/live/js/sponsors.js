@@ -108,7 +108,7 @@
         <div class="sponsors-footer">
           <a class="btn-anuncie-aqui" href="${contactUrl}" target="_blank" rel="noopener">
             <span class="anuncie-icon">⚡</span>
-            <span class="anuncie-text">Anuncie na Caveira Mix</span>
+            <span class="anuncie-text">Anuncie na Rádio Caveira</span>
             <span class="anuncie-arrow">↗</span>
           </a>
         </div>

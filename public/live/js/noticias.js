@@ -37,8 +37,8 @@ async function updateHeaderNowPlaying() {
     if (!res.ok) return;
     const data = await res.json();
     const np = data.now_playing?.song || {};
-    const title = np.title || "Ao Vivo";
-    const artist = np.artist || "Caveira Mix";
+    const artist = np.artist || "Rádio Caveira";
+    const title = np.title || "Rádio Caveira Ao Vivo";
     const elTitle = $("header-stream-title");
     const elArtist = $("header-stream-artist");
     if (elTitle) elTitle.textContent = title;
@@ -423,7 +423,7 @@ const FALLBACK_ROCK_NEWS = [
     desc: "A banda continua quebrando recordes com o palco 360 graus e dois setlists completamente diferentes a cada fim de semana.",
     thumb: ROCK_THUMBS_LIBRARY.metallica,
     date: "Hoje às 18:30",
-    source: "Caveira Mix News",
+    source: "Rádio Caveira News",
     link: "https://www.google.com/search?q=Metallica+turne+shows"
   },
   {
@@ -434,7 +434,7 @@ const FALLBACK_ROCK_NEWS = [
     desc: "Bruce Dickinson e Steve Harris prometem uma produção visual inédita com músicas dos 9 primeiros álbuns de estúdio.",
     thumb: ROCK_THUMBS_LIBRARY.maiden,
     date: "Hoje às 15:40",
-    source: "Metal Hammer / Caveira Mix",
+    source: "Metal Hammer / Rádio Caveira",
     link: "https://www.google.com/search?q=Iron+Maiden+Run+For+Your+Lives"
   },
   {
@@ -445,7 +445,7 @@ const FALLBACK_ROCK_NEWS = [
     desc: "Com o virtuoso Greyson Nekrutman na bateria, os gigantes brasileiros entregam apresentações viscerais por todo o planeta.",
     thumb: ROCK_THUMBS_LIBRARY.sepultura,
     date: "Ontem às 21:10",
-    source: "Whiplash / Caveira Mix",
+    source: "Whiplash / Rádio Caveira",
     link: "https://www.google.com/search?q=Sepultura+Celebrating+Life+Through+Death"
   },
   {
@@ -467,7 +467,7 @@ const FALLBACK_ROCK_NEWS = [
     desc: "Tobias Forge apresenta nova era visual e sonora misteriosa com guitarras pesadas e refrões grandiosos de arena rock.",
     thumb: ROCK_THUMBS_LIBRARY.ghost,
     date: "Há 2 dias",
-    source: "Blabbermouth / Caveira Mix",
+    source: "Blabbermouth / Rádio Caveira",
     link: "https://www.google.com/search?q=Ghost+band+new+album+single"
   },
   {
@@ -478,7 +478,7 @@ const FALLBACK_ROCK_NEWS = [
     desc: "Aos 69 anos, Angus Young continua correndo de ponta a ponta no palco e executando os solos mais eletrizantes do Hard Rock.",
     thumb: ROCK_THUMBS_LIBRARY.acdc,
     date: "Há 3 dias",
-    source: "Classic Rock Magazine",
+    source: "Classic Rock / Rádio Caveira",
     link: "https://www.google.com/search?q=ACDC+Power+Up+tour"
   }
 ];
@@ -538,7 +538,7 @@ async function fetchLiveRockNews(force = false) {
               desc: item.descricao,
               thumb: item.imagem_url || ROCK_THUMBS_LIBRARY.metal,
               date: item.data_publicacao || formatNewsDate(item.created_at),
-              source: item.fonte || "Caveira Mix Oficial",
+              source: item.fonte || "Rádio Caveira Oficial",
               link: item.link || "https://caveira-mix.uk",
             }));
             if (statusEl) statusEl.textContent = `🟢 Portal Supabase Ativo (${parsedNews.length} matérias)`;

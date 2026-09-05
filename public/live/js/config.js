@@ -30,7 +30,7 @@ window.CAVEIRA_CONFIG = {
 
   // --- Compartilhamento ---
   SHARE_URL: "https://caveira-mix.uk/",
-  SHARE_TEXT: "🤘 Ouça a Caveira Mix — Rock, Metal & Underground 24h ao vivo!",
+  SHARE_TEXT: "🤘 Ouça a Rádio Caveira — Rock, Metal & Underground 24h ao vivo!",
 
   // --- Chaves de API (lidas do Cloudflare Secret / .dev.vars) ---
   OPENWEATHER_API_KEY: __ENV.OPENWEATHER_API_KEY || "",

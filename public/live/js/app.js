@@ -511,7 +511,7 @@ async function updateNowPlaying() {
     const data = await res.json();
 
     const np = data.now_playing?.song || {};
-    const artist = np.artist || "Caveira Mix";
+    const artist = np.artist || "Rádio Caveira";
     const title = np.title || "Ao Vivo";
     const album = np.album || "";
     const fallbackArt = np.art || "";
@@ -545,7 +545,7 @@ async function updateNowPlaying() {
       elTitle.textContent = title;
       elArtist.textContent = artist;
       elAlbum.textContent = album ? `💿 ${album}` : "";
-      document.title = `▶ ${title} — ${artist} | Caveira Mix`;
+      document.title = `▶ ${title} — ${artist} | Rádio Caveira`;
 
       const cover = await fetchCover(artist, title, fallbackArt);
       discCover.src = cover;
@@ -591,7 +591,7 @@ async function renderPlayingNext(pn) {
     return;
   }
 
-  const artist = song.artist || "Caveira Mix";
+  const artist = song.artist || "Rádio Caveira";
   const title = song.title || "A definir";
   const fallbackArt = song.art || "";
   const key = `${artist}-${title}`;

@@ -10,7 +10,7 @@
   const DEFAULT_BULLETINS = [
     {
       id: "def-1",
-      mensagem: "BEM-VINDO À CAVEIRA MIX! A SUA RÁDIO ROCK, METAL & UNDERGROUND 24H NO AR!",
+      mensagem: "BEM-VINDO À RÁDIO CAVEIRA! A SUA RÁDIO ROCK, METAL & UNDERGROUND 24H NO AR!",
       autor: "Administração",
       tipo: "aviso",
       cor_led: "red",
@@ -31,7 +31,7 @@
     },
     {
       id: "def-4",
-      mensagem: "COMPARTILHE A CAVEIRA MIX: Chame a galera headbanger para sintonizar a rádio pesada!",
+      mensagem: "COMPARTILHE A RÁDIO CAVEIRA: Chame a galera headbanger para sintonizar a rádio pesada!",
       autor: "Equipe Caveira",
       tipo: "aviso",
       cor_led: "green",
