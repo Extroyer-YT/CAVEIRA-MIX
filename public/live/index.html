@@ -74,9 +74,6 @@
         <li><a class="nav-link nav-link-news" href="/live/noticias.html" target="_blank" rel="noopener">
           <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
           <span>Mundo do Rock 📰</span></a></li>
-        <li><button class="nav-link nav-link-pip" id="nav-btn-floating" type="button" title="Ativar/Fixar Mini Player Flutuante">
-          <span class="nav-ico">📌</span>
-          <span>Mini Player</span></button></li>
       </ul>
 
     </nav>
@@ -210,8 +207,10 @@
                 <span class="vol-ico">🔊</span>
                 <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume" />
               </div>
-              <button id="btn-toggle-floating-player" class="btn-floating-player" type="button" title="Ativar / Fixar Mini Player Flutuante" aria-label="Modo Mini Player Flutuante">
-                <span class="pip-icon">📌</span>
+              <button id="btn-toggle-floating-player" class="btn-floating-player" type="button" title="Ativar Mini Player Flutuante (estilo YouTube)" aria-label="Modo Mini Player Flutuante">
+                <span class="pip-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 1.98 2 1.98h18c1.1 0 2-.88 2-1.98V5c0-1.1-.9-2-2-2zm0 16.01H3V4.98h18v14.03z"/></svg>
+                </span>
                 <span class="pip-label">Mini Player</span>
               </button>
             </div>
@@ -600,35 +599,62 @@
     </div>
   </div>
 
-  <!-- Mini-Player Fixo no Rodapé (Sticky Player) -->
-  <aside class="sticky-player glass" id="sticky-player" aria-label="Controle rápido da rádio">
-    <div class="sticky-track">
-      <img id="sticky-cover" class="sticky-cover" src="/live/assets/logo.png" alt="Música atual" />
-      <div class="sticky-info">
-        <div class="sticky-now-badge"><span class="pulse-dot"></span> NO AR</div>
-        <p id="sticky-title" class="sticky-title">Carregando…</p>
-        <p id="sticky-artist" class="sticky-artist">Rádio Caveira</p>
+  <!-- Mini Player Flutuante Estilo YouTube / Picture-in-Picture -->
+  <aside class="youtube-pip-player" id="floating-pip-player" aria-label="Mini Player Flutuante da Rádio" role="region">
+    <!-- Header / Barra de Arrastar (Drag Header) -->
+    <div class="pip-drag-bar" id="pip-drag-handle" title="Arraste para mover o Mini Player pelo site">
+      <div class="pip-drag-indicator">
+        <span class="pip-grip-dot"></span>
+        <span class="pip-grip-dot"></span>
+        <span class="pip-grip-dot"></span>
+      </div>
+      <span class="pip-header-label"><span class="pulse-dot"></span> RÁDIO CAVEIRA AO VIVO</span>
+      <div class="pip-actions-top">
+        <button id="pip-btn-expand" class="pip-action-btn" type="button" title="Ir para o Player Principal" aria-label="Expandir Player">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        </button>
+        <button id="pip-btn-close" class="pip-action-btn pip-close-btn" type="button" title="Fechar Mini Player Flutuante" aria-label="Fechar Mini Player">✕</button>
       </div>
     </div>
 
-    <div class="sticky-center">
-      <div class="sticky-controls">
-        <button id="sticky-btn-play" class="sticky-btn-play" aria-label="Play / Pause">▶</button>
+    <!-- Corpo do Player Flutuante -->
+    <div class="pip-content-body">
+      <!-- Mídia / Capa com overlay de Play -->
+      <div class="pip-cover-wrapper">
+        <img id="pip-cover-img" class="pip-cover-img" src="/live/assets/logo.png" alt="Capa da Música" />
+        <div class="pip-disc-vinyl" id="pip-disc-vinyl"></div>
+        <button id="pip-btn-play" class="pip-overlay-play-btn" aria-label="Tocar ou Pausar">▶</button>
       </div>
-      <div class="sticky-progress-wrap" id="sticky-progress-wrap">
-        <div class="sticky-progress-bar">
-          <div class="sticky-progress-fill" id="sticky-progress-fill"></div>
+
+      <!-- Metadados & Controles Compactos -->
+      <div class="pip-meta-section">
+        <div class="pip-track-info">
+          <p id="pip-track-title" class="pip-track-title">Carregando som…</p>
+          <p id="pip-track-artist" class="pip-track-artist">Rádio Caveira</p>
         </div>
-        <span class="sticky-time" id="sticky-time">00:00 / 00:00</span>
-      </div>
-    </div>
 
-    <div class="sticky-volume-wrap">
-      <span class="sticky-vol-ico">🔊</span>
-      <input id="sticky-volume" type="range" min="0" max="100" value="80" aria-label="Volume" />
-      <button id="sticky-btn-pin" class="sticky-btn-pin" type="button" aria-label="Fixar ou Desafixar Player Flutuante" title="Fixar / Desafixar Player Flutuante">📌</button>
-      <button id="sticky-scroll-top" class="sticky-scroll-top" type="button" aria-label="Voltar ao topo" title="Ver player completo">▲</button>
-      <button id="sticky-btn-close" class="sticky-btn-close" type="button" aria-label="Fechar Mini Player" title="Ocultar Mini Player">✕</button>
+        <!-- Barra de Progresso Compacta -->
+        <div class="pip-progress-row">
+          <div class="pip-progress-bar">
+            <div class="pip-progress-fill" id="pip-progress-fill"></div>
+          </div>
+          <span class="pip-time" id="pip-time-display">00:00 / 00:00</span>
+        </div>
+
+        <!-- Controles de Volume e Status -->
+        <div class="pip-controls-row">
+          <div class="pip-vol-group">
+            <span class="pip-vol-icon">🔊</span>
+            <input id="pip-volume-slider" type="range" min="0" max="100" value="80" aria-label="Volume do Mini Player" />
+          </div>
+          <div class="pip-live-badge">
+            <span class="pip-sound-waves">
+              <span></span><span></span><span></span>
+            </span>
+            <span>NO AR</span>
+          </div>
+        </div>
+      </div>
     </div>
   </aside>
 
