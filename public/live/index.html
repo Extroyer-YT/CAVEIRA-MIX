@@ -38,10 +38,11 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js" defer></script>
 </head>
 <body>
-  <!-- TELA DE ABERTURA CINEMATOGRÁFICA ESTILO +SBT / STREAMING -->
+  <!-- TELA DE ABERTURA CINEMATOGRÁFICA COM RAIOS VERMELHOS (ESTILO +SBT) -->
   <div id="splash-screen" class="splash-screen" role="dialog" aria-modal="true" aria-label="Abertura Rádio Web Caveira">
     <div class="splash-backdrop-blur" aria-hidden="true"></div>
     <div class="splash-ambient-glow" aria-hidden="true"></div>
+    <canvas id="splash-lightning-canvas" class="splash-lightning-canvas" aria-hidden="true"></canvas>
     <div class="splash-center-content">
       <div class="splash-logo-container">
         <img src="/live/assets/radio-caveira-logo.png" alt="Rádio Web Caveira" class="splash-logo" />
@@ -52,17 +53,172 @@
     (function () {
       var splash = document.getElementById('splash-screen');
       if (!splash) return;
-      // Anexa diretamente ao html para cobrir 100% da tela sem ser reduzido pelo zoom do body
-      try {
-        if (splash.parentElement === document.body) {
-          document.documentElement.appendChild(splash);
-        }
-      } catch (_) {}
+
+      // Animação de Raios Vermelhos Elétricos
+      var lCanvas = document.getElementById('splash-lightning-canvas');
+      var stopLightning = null;
+      if (lCanvas && lCanvas.getContext) {
+        (function () {
+          var ctx = lCanvas.getContext('2d');
+          var bolts = [];
+          var animId = null;
+          var lastStrike = 0;
+
+          function resize() {
+            lCanvas.width = window.innerWidth;
+            lCanvas.height = window.innerHeight;
+          }
+          resize();
+          window.addEventListener('resize', resize);
+          window.addEventListener('orientationchange', resize);
+
+          function createSegments(x1, y1, x2, y2, depth, allowBranch) {
+            var segs = [];
+            function sub(ax, ay, bx, by, d) {
+              if (d <= 0) {
+                segs.push({ x1: ax, y1: ay, x2: bx, y2: by });
+                return;
+              }
+              var mx = (ax + bx) / 2;
+              var my = (ay + by) / 2;
+              var len = Math.hypot(bx - ax, by - ay) || 1;
+              var nx = -(by - ay) / len;
+              var ny = (bx - ax) / len;
+              var offset = (Math.random() - 0.5) * len * 0.45;
+              var px = mx + nx * offset;
+              var py = my + ny * offset;
+
+              sub(ax, ay, px, py, d - 1);
+              sub(px, py, bx, by, d - 1);
+
+              if (allowBranch && d === 2 && Math.random() < 0.6) {
+                var angle = (Math.random() - 0.5) * 1.3;
+                var cos = Math.cos(angle);
+                var sin = Math.sin(angle);
+                var bdx = ((bx - ax) * cos - (by - ay) * sin) * 0.45;
+                var bdy = ((bx - ax) * sin + (by - ay) * cos) * 0.45;
+                sub(px, py, px + bdx, py + bdy, 1, false);
+              }
+            }
+            sub(x1, y1, x2, y2, depth);
+            return segs;
+          }
+
+          function strike() {
+            var w = lCanvas.width;
+            var h = lCanvas.height;
+            var cx = w / 2;
+            var cy = h / 2;
+            var strikesCount = 1 + Math.floor(Math.random() * 2);
+            var isMobile = w <= 768;
+            var logoR = Math.min(w * 0.28, isMobile ? 120 : 160);
+
+            for (var i = 0; i < strikesCount; i++) {
+              var sx, sy;
+              var r = Math.random();
+              if (r < 0.45) {
+                sx = cx + (Math.random() - 0.5) * w * 0.9;
+                sy = 0;
+              } else if (r < 0.72) {
+                sx = 0;
+                sy = cy + (Math.random() - 0.5) * h * 0.8;
+              } else {
+                sx = w;
+                sy = cy + (Math.random() - 0.5) * h * 0.8;
+              }
+
+              var angle = Math.random() * Math.PI * 2;
+              var dist = logoR * (0.4 + Math.random() * 0.6);
+              var ex = cx + Math.cos(angle) * dist;
+              var ey = cy + Math.sin(angle) * dist;
+
+              bolts.push({
+                segs: createSegments(sx, sy, ex, ey, 4, true),
+                life: 1.0,
+                decay: 0.08 + Math.random() * 0.06,
+                flash: Math.random() < 0.35
+              });
+            }
+
+            for (var j = 0; j < 2; j++) {
+              var a1 = Math.random() * Math.PI * 2;
+              var a2 = a1 + (Math.random() - 0.5) * 1.6;
+              var rad1 = logoR * (0.8 + Math.random() * 0.4);
+              var rad2 = logoR * (0.8 + Math.random() * 0.4);
+              bolts.push({
+                segs: createSegments(cx + Math.cos(a1) * rad1, cy + Math.sin(a1) * rad1, cx + Math.cos(a2) * rad2, cy + Math.sin(a2) * rad2, 3, false),
+                life: 1.0,
+                decay: 0.14,
+                flash: false
+              });
+            }
+          }
+
+          function loop(ts) {
+            if (!lastStrike || ts - lastStrike > (160 + Math.random() * 240)) {
+              lastStrike = ts;
+              strike();
+            }
+
+            ctx.clearRect(0, 0, lCanvas.width, lCanvas.height);
+
+            var flash = false;
+            for (var i = bolts.length - 1; i >= 0; i--) {
+              var b = bolts[i];
+              if (b.flash && b.life > 0.75) flash = true;
+
+              ctx.save();
+              ctx.strokeStyle = 'rgba(255, 30, 50, ' + (b.life * 0.85) + ')';
+              ctx.lineWidth = isMobile ? 3.2 : 4.5;
+              ctx.shadowColor = '#ff0033';
+              ctx.shadowBlur = isMobile ? 12 : 18;
+              ctx.lineCap = 'round';
+              ctx.beginPath();
+              for (var k = 0; k < b.segs.length; k++) {
+                ctx.moveTo(b.segs[k].x1, b.segs[k].y1);
+                ctx.lineTo(b.segs[k].x2, b.segs[k].y2);
+              }
+              ctx.stroke();
+
+              ctx.strokeStyle = 'rgba(255, 230, 235, ' + (b.life * 0.95) + ')';
+              ctx.lineWidth = isMobile ? 1.2 : 1.5;
+              ctx.shadowBlur = 4;
+              ctx.beginPath();
+              for (var m = 0; m < b.segs.length; m++) {
+                ctx.moveTo(b.segs[m].x1, b.segs[m].y1);
+                ctx.lineTo(b.segs[m].x2, b.segs[m].y2);
+              }
+              ctx.stroke();
+              ctx.restore();
+
+              b.life -= b.decay;
+              if (b.life <= 0) bolts.splice(i, 1);
+            }
+
+            if (flash) {
+              ctx.fillStyle = 'rgba(255, 20, 45, 0.08)';
+              ctx.fillRect(0, 0, lCanvas.width, lCanvas.height);
+            }
+
+            animId = requestAnimationFrame(loop);
+          }
+
+          animId = requestAnimationFrame(loop);
+
+          stopLightning = function () {
+            if (animId) cancelAnimationFrame(animId);
+            window.removeEventListener('resize', resize);
+            window.removeEventListener('orientationchange', resize);
+          };
+        })();
+      }
+
       var closed = false;
       function dismissSplash() {
         if (closed) return;
         closed = true;
         splash.classList.add('splash-hide');
+        if (typeof stopLightning === 'function') stopLightning();
         setTimeout(function () {
           splash.style.display = 'none';
           if (splash.parentNode) splash.parentNode.removeChild(splash);

@@ -4924,12 +4924,13 @@ body { overflow-x: clip; }
   bottom: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
+  height: 100dvh !important;
   z-index: 999999999 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: #141416 !important;
-  background: radial-gradient(circle at center, #242429 0%, #151518 60%, #0c0c0e 100%) !important;
+  background-color: #121215 !important;
+  background: radial-gradient(circle at center, #222228 0%, #131316 60%, #0a0a0c 100%) !important;
   backdrop-filter: blur(30px) !important;
   -webkit-backdrop-filter: blur(30px) !important;
   opacity: 1;
@@ -4942,13 +4943,22 @@ body { overflow-x: clip; }
   user-select: none;
 }
 
-/* Neutraliza o zoom de 0.70 do body no desktop para garantir tela 100% cheia */
-body .splash-screen {
-  zoom: 1.4285714 !important;
+/* No desktop (>1024px), o body tem zoom: 0.70, então compensamos exatamente com 1.42857 */
+@media (min-width: 1025px) {
+  body .splash-screen {
+    zoom: 1.4285714 !important;
+  }
 }
 
-html > .splash-screen {
-  zoom: 1 !important;
+/* No celular e tablet (<=1024px), zoom permanece estritamente 1.0 ocupando 100dvh */
+@media (max-width: 1024px) {
+  body .splash-screen,
+  .splash-screen {
+    zoom: 1 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
 }
 
 .splash-screen.splash-hide {
@@ -4973,7 +4983,7 @@ html > .splash-screen {
   width: 520px;
   height: 520px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(229, 9, 20, 0.22) 0%, rgba(255, 45, 63, 0.08) 45%, transparent 70%);
+  background: radial-gradient(circle, rgba(229, 9, 20, 0.25) 0%, rgba(255, 45, 63, 0.1) 45%, transparent 70%);
   filter: blur(55px);
   z-index: 1;
   pointer-events: none;
@@ -4985,9 +4995,19 @@ html > .splash-screen {
   100% { transform: scale(1.18); opacity: 0.95; }
 }
 
+/* Canvas dos Raios Vermelhos Animados */
+.splash-lightning-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .splash-center-content {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5008,7 +5028,7 @@ html > .splash-screen {
   max-height: 360px;
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 45px rgba(229, 9, 20, 0.35));
+  filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 50px rgba(229, 9, 20, 0.45));
   animation: sbtLogoBreathe 3s ease-in-out infinite alternate;
 }
 
@@ -5026,18 +5046,18 @@ html > .splash-screen {
 @keyframes sbtLogoBreathe {
   0% {
     transform: scale(1);
-    filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 40px rgba(229, 9, 20, 0.35));
+    filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 45px rgba(229, 9, 20, 0.4));
   }
   100% {
     transform: scale(1.03);
-    filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 65px rgba(255, 45, 63, 0.55));
+    filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 75px rgba(255, 45, 63, 0.65));
   }
 }
 
 @media (max-width: 480px) {
   .splash-logo {
-    width: min(260px, 72vw);
-    height: min(260px, 72vw);
+    width: min(250px, 70vw);
+    height: min(250px, 70vw);
   }
 }
 
