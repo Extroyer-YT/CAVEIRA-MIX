@@ -4917,19 +4917,21 @@ body { overflow-x: clip; }
    TELA DE ABERTURA CINEMATOGRÁFICA (ESTILO +SBT / STREAMING)
    ============================================================ */
 .splash-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 99999999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #1a1a1c;
-  background: radial-gradient(circle at center, #232328 0%, #161619 65%, #0e0e10 100%);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #141416 !important;
+  background: radial-gradient(circle at center, #242429 0%, #151518 60%, #0c0c0e 100%) !important;
+  backdrop-filter: blur(30px) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
   opacity: 1;
   visibility: visible;
   transition: opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1),
@@ -4940,11 +4942,20 @@ body { overflow-x: clip; }
   user-select: none;
 }
 
+/* Neutraliza o zoom de 0.70 do body no desktop para garantir tela 100% cheia */
+body .splash-screen {
+  zoom: 1.4285714 !important;
+}
+
+html > .splash-screen {
+  zoom: 1 !important;
+}
+
 .splash-screen.splash-hide {
-  opacity: 0;
-  visibility: hidden;
+  opacity: 0 !important;
+  visibility: hidden !important;
   transform: scale(1.04);
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 .splash-backdrop-blur {

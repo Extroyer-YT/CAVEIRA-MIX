@@ -43,7 +43,7 @@
     <div class="splash-ambient-glow" aria-hidden="true"></div>
     <div class="splash-center-content">
       <div class="splash-logo-container">
-        <img src="/live/assets/radio-caveira-logo.jpg" alt="Rádio Web Caveira" class="splash-logo" />
+        <img src="/live/assets/radio-caveira-logo.png" alt="Rádio Web Caveira" class="splash-logo" />
       </div>
     </div>
   </div>
@@ -51,6 +51,12 @@
     (function () {
       var splash = document.getElementById('splash-screen');
       if (!splash) return;
+      // Anexa diretamente ao html para cobrir 100% da tela sem ser reduzido pelo zoom do body
+      try {
+        if (splash.parentElement === document.body) {
+          document.documentElement.appendChild(splash);
+        }
+      } catch (_) {}
       var closed = false;
       function dismissSplash() {
         if (closed) return;
@@ -62,7 +68,7 @@
         }, 850);
       }
       splash.addEventListener('click', dismissSplash);
-      // Desaparece automaticamente após 3 segundos
+      // Desaparece suavemente após 3 segundos
       setTimeout(dismissSplash, 3000);
     })();
   </script>
