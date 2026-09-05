@@ -74,6 +74,9 @@
         <li><a class="nav-link nav-link-news" href="/live/noticias.html" target="_blank" rel="noopener">
           <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
           <span>Mundo do Rock 📰</span></a></li>
+        <li><button class="nav-link nav-link-pip" id="nav-btn-floating" type="button" title="Ativar/Fixar Mini Player Flutuante">
+          <span class="nav-ico">📌</span>
+          <span>Mini Player</span></button></li>
       </ul>
 
     </nav>
@@ -207,6 +210,10 @@
                 <span class="vol-ico">🔊</span>
                 <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume" />
               </div>
+              <button id="btn-toggle-floating-player" class="btn-floating-player" type="button" title="Ativar / Fixar Mini Player Flutuante" aria-label="Modo Mini Player Flutuante">
+                <span class="pip-icon">📌</span>
+                <span class="pip-label">Mini Player</span>
+              </button>
             </div>
 
             <!-- Próxima Música (AzuraCast Playing Next) -->
@@ -394,7 +401,18 @@
 
       <!-- Formulário de Envio de Comentário -->
       <div class="comment-composer-card glass">
+        <!-- Banner de Resposta a um Comentário -->
+        <div class="reply-target-banner" id="reply-target-banner" style="display: none;">
+          <div class="reply-target-info">
+            <span class="reply-target-icon">↩️</span>
+            <span>Respondendo a <strong id="reply-target-author">Diego Metalhead</strong>:</span>
+            <span class="reply-target-preview" id="reply-target-text"></span>
+          </div>
+          <button type="button" class="btn-cancel-reply" id="btn-cancel-reply" title="Cancelar resposta">✕ Cancelar</button>
+        </div>
+
         <form id="comment-form" class="comment-form">
+          <input type="hidden" id="reply-parent-id" value="" />
           <div class="composer-top">
             <div class="rock-emoji-toolbar" title="Inserir emoji rápido">
               <span class="emoji-toolbar-label">Atalhos:</span>
@@ -425,7 +443,7 @@
             <span class="composer-hint">💡 Respeite a galera e mantenha o espírito do Rock!</span>
             <button type="submit" id="btn-post-comment" class="btn-post-comment">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-              <span>Publicar Recado 🤘</span>
+              <span id="btn-post-comment-text">Publicar Recado 🤘</span>
             </button>
           </div>
         </form>
@@ -608,7 +626,9 @@
     <div class="sticky-volume-wrap">
       <span class="sticky-vol-ico">🔊</span>
       <input id="sticky-volume" type="range" min="0" max="100" value="80" aria-label="Volume" />
+      <button id="sticky-btn-pin" class="sticky-btn-pin" type="button" aria-label="Fixar ou Desafixar Player Flutuante" title="Fixar / Desafixar Player Flutuante">📌</button>
       <button id="sticky-scroll-top" class="sticky-scroll-top" type="button" aria-label="Voltar ao topo" title="Ver player completo">▲</button>
+      <button id="sticky-btn-close" class="sticky-btn-close" type="button" aria-label="Fechar Mini Player" title="Ocultar Mini Player">✕</button>
     </div>
   </aside>
 

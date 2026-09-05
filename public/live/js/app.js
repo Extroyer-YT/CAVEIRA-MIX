@@ -1345,23 +1345,120 @@ function initParticles() {
   addEventListener("resize", () => { resize(); make(); });
 }
 
+// Controle do Modo Mini Player Flutuante (Floating / PiP Player)
+let isFloatingPinned = false;
+try {
+  isFloatingPinned = localStorage.getItem("caveira_floating_player_pinned") === "true";
+} catch (e) {}
+
 function initStickyObserver() {
   const sticky = $("sticky-player");
   const hero = $("hero");
-  if (!sticky || !hero) return;
-  if ("IntersectionObserver" in window) {
+  const btnToggleFloating = $("btn-toggle-floating-player");
+  const navBtnFloating = $("nav-btn-floating");
+  const btnPinSticky = $("sticky-btn-pin");
+  const btnCloseSticky = $("sticky-btn-close");
+  const btnScrollTop = $("sticky-scroll-top");
+
+  if (!sticky) return;
+
+  function updateFloatingUI() {
+    if (isFloatingPinned) {
+      sticky.classList.add("visible");
+      sticky.classList.add("pinned-floating");
+      if (btnToggleFloating) {
+        btnToggleFloating.classList.add("active");
+        const lbl = btnToggleFloating.querySelector(".pip-label");
+        if (lbl) lbl.textContent = "Fixado";
+      }
+      if (navBtnFloating) navBtnFloating.classList.add("active");
+      if (btnPinSticky) {
+        btnPinSticky.classList.add("active");
+        btnPinSticky.title = "Desafixar Mini Player (Modo Automático)";
+      }
+    } else {
+      sticky.classList.remove("pinned-floating");
+      if (btnToggleFloating) {
+        btnToggleFloating.classList.remove("active");
+        const lbl = btnToggleFloating.querySelector(".pip-label");
+        if (lbl) lbl.textContent = "Mini Player";
+      }
+      if (navBtnFloating) navBtnFloating.classList.remove("active");
+      if (btnPinSticky) {
+        btnPinSticky.classList.remove("active");
+        btnPinSticky.title = "Fixar Mini Player Flutuante Sempre Visível";
+      }
+    }
+  }
+
+  function togglePinnedFloating(forceState) {
+    if (typeof forceState === "boolean") {
+      isFloatingPinned = forceState;
+    } else {
+      isFloatingPinned = !isFloatingPinned;
+    }
+
+    try {
+      localStorage.setItem("caveira_floating_player_pinned", String(isFloatingPinned));
+    } catch (e) {}
+
+    updateFloatingUI();
+
+    if (window.showToast) {
+      if (isFloatingPinned) {
+        window.showToast("📌 Modo Mini Player Flutuante fixado na tela!", "success");
+      } else {
+        window.showToast("Mini player em modo automático (surge ao rolar a página).", "info");
+      }
+    }
+  }
+
+  if (btnToggleFloating) {
+    btnToggleFloating.addEventListener("click", () => togglePinnedFloating());
+  }
+  if (navBtnFloating) {
+    navBtnFloating.addEventListener("click", () => togglePinnedFloating());
+  }
+  if (btnPinSticky) {
+    btnPinSticky.addEventListener("click", () => togglePinnedFloating());
+  }
+  if (btnCloseSticky) {
+    btnCloseSticky.addEventListener("click", () => {
+      isFloatingPinned = false;
+      try {
+        localStorage.setItem("caveira_floating_player_pinned", "false");
+      } catch (e) {}
+      sticky.classList.remove("visible");
+      sticky.classList.remove("pinned-floating");
+      updateFloatingUI();
+    });
+  }
+  if (btnScrollTop) {
+    btnScrollTop.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  // Se já estiver salvo como fixado, aplica imediatamente
+  if (isFloatingPinned) {
+    updateFloatingUI();
+  }
+
+  // Observer normal para quando a pessoa rolar a página para baixo
+  if (hero && "IntersectionObserver" in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((en) => {
         if (!en.isIntersecting) {
           sticky.classList.add("visible");
-        } else {
+        } else if (!isFloatingPinned) {
           sticky.classList.remove("visible");
         }
       });
     }, { threshold: 0.15 });
     io.observe(hero);
-  } else {
+  } else if (hero) {
     window.addEventListener("scroll", () => {
+      if (isFloatingPinned) return;
       if (window.scrollY > 350) sticky.classList.add("visible");
       else sticky.classList.remove("visible");
     });

@@ -7,6 +7,7 @@
 -- 1. Criação da tabela principal de comentários do mural
 CREATE TABLE IF NOT EXISTS public.comentarios_mural (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  parent_id UUID REFERENCES public.comentarios_mural(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   nome TEXT NOT NULL,
   email TEXT,
@@ -18,8 +19,20 @@ CREATE TABLE IF NOT EXISTS public.comentarios_mural (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Adiciona parent_id caso a tabela já exista
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'comentarios_mural' AND column_name = 'parent_id'
+  ) THEN
+    ALTER TABLE public.comentarios_mural ADD COLUMN parent_id UUID REFERENCES public.comentarios_mural(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
 -- Índices para alta performance nas buscas e ordenações
 CREATE INDEX IF NOT EXISTS idx_comentarios_created_at ON public.comentarios_mural (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comentarios_parent_id ON public.comentarios_mural (parent_id);
 CREATE INDEX IF NOT EXISTS idx_comentarios_aprovado ON public.comentarios_mural (aprovado);
 CREATE INDEX IF NOT EXISTS idx_comentarios_user_id ON public.comentarios_mural (user_id);
 

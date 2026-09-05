@@ -412,7 +412,45 @@
     renderComments();
   }
 
-  // 8. Renderiza a lista de comentários no DOM
+  // Variáveis para controle de resposta (Reply)
+  let replyingToComment = null;
+  let elReplyBanner = null;
+  let elReplyAuthor = null;
+  let elReplyText = null;
+  let elReplyParentId = null;
+  let elBtnCancelReply = null;
+  let elBtnPostCommentText = null;
+
+  function setReplyTarget(comment) {
+    if (!comment) {
+      cancelReply();
+      return;
+    }
+    replyingToComment = comment;
+    if (elReplyParentId) elReplyParentId.value = comment.id;
+    if (elReplyAuthor) elReplyAuthor.textContent = comment.nome;
+    if (elReplyText) elReplyText.textContent = `"${comment.mensagem.substring(0, 60)}${comment.mensagem.length > 60 ? '...' : ''}"`;
+    if (elReplyBanner) elReplyBanner.style.display = "flex";
+    if (elBtnPostCommentText) elBtnPostCommentText.textContent = `Responder a ${comment.nome.split(' ')[0]} 🤘`;
+    
+    if (elCommentInput) {
+      elCommentInput.placeholder = `Escreva sua resposta para ${comment.nome}...`;
+      elCommentInput.focus();
+      elCommentInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  function cancelReply() {
+    replyingToComment = null;
+    if (elReplyParentId) elReplyParentId.value = "";
+    if (elReplyBanner) elReplyBanner.style.display = "none";
+    if (elBtnPostCommentText) elBtnPostCommentText.textContent = "Publicar Recado 🤘";
+    if (elCommentInput) {
+      elCommentInput.placeholder = "Deixe seu recado no mural (Faça login para salvar seu perfil)...";
+    }
+  }
+
+  // 8. Renderiza a lista de comentários no DOM (com suporte a threads / respostas)
   function renderComments() {
     if (!elCommentsList) return;
 
@@ -431,12 +469,29 @@
       return;
     }
 
-    const html = commentsData.map((item, index) => {
+    // Separa os comentários raiz (sem parent_id) das respostas (com parent_id)
+    const rootComments = [];
+    const repliesMap = new Map();
+
+    commentsData.forEach((item) => {
+      if (item.parent_id) {
+        if (!repliesMap.has(item.parent_id)) {
+          repliesMap.set(item.parent_id, []);
+        }
+        repliesMap.get(item.parent_id).push(item);
+      } else {
+        rootComments.push(item);
+      }
+    });
+
+    // Função interna para gerar HTML de um card de comentário ou resposta
+    function createCommentCardHtml(item, isReply = false, isFirst = false) {
       const isLiked = likedCommentIds.has(item.id);
       const isMine = currentUser && currentUser.id === item.user_id;
+      const childReplies = repliesMap.get(item.id) || [];
 
       return `
-        <article class="comment-card ${index === 0 ? 'comment-new' : ''}" data-id="${item.id}">
+        <article class="comment-card ${isReply ? 'comment-reply-card' : ''} ${isFirst && !isReply ? 'comment-new' : ''}" data-id="${item.id}">
           <div class="comment-header">
             <div class="comment-author-wrap">
               <div class="comment-avatar" title="${escapeHtml(item.nome)}">${escapeHtml(item.avatar_url || '💀')}</div>
@@ -453,27 +508,55 @@
           </div>
 
           <div class="comment-footer">
+            <button class="btn-comment-reply" data-action="reply" data-id="${item.id}" title="Responder a este comentário">
+              <span class="reply-ico">↩️</span>
+              <span>Responder</span>
+            </button>
             <button class="btn-comment-like ${isLiked ? 'liked' : ''}" data-action="like" data-id="${item.id}" title="Curtir comentário">
               <span class="like-icon">${isLiked ? '🔥' : '🤘'}</span>
               <span class="like-count">${item.likes_count || 0}</span>
             </button>
           </div>
+
+          ${childReplies.length > 0 ? `
+            <div class="comment-replies-thread">
+              <div class="replies-thread-header">
+                <span class="replies-count-badge">💬 ${childReplies.length} ${childReplies.length === 1 ? 'resposta' : 'respostas'}</span>
+              </div>
+              <div class="replies-list">
+                ${childReplies.map((reply) => createCommentCardHtml(reply, true)).join("")}
+              </div>
+            </div>
+          ` : ''}
         </article>
       `;
-    }).join("");
+    }
+
+    const html = rootComments.map((item, index) => createCommentCardHtml(item, false, index === 0)).join("");
 
     elCommentsList.innerHTML = html;
 
     // Conecta cliques no botão de curtir
     elCommentsList.querySelectorAll(".btn-comment-like").forEach((btn) => {
       btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const id = btn.getAttribute("data-id");
         if (id) handleLike(id);
       });
     });
+
+    // Conecta cliques no botão de responder
+    elCommentsList.querySelectorAll(".btn-comment-reply").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-id");
+        const comment = commentsData.find((c) => String(c.id) === String(id));
+        if (comment) setReplyTarget(comment);
+      });
+    });
   }
 
-  // 9. Envio de Novo Comentário
+  // 9. Envio de Novo Comentário / Resposta
   async function handleCommentSubmit(e) {
     e.preventDefault();
 
@@ -498,8 +581,10 @@
     const authorBadge = currentUser ? currentUser.badge : "🤘 Headbanger";
     const userId = currentUser ? currentUser.id : null;
     const userEmail = currentUser ? currentUser.email : null;
+    const parentId = replyingToComment ? replyingToComment.id : null;
 
     const newCommentObj = {
+      parent_id: parentId,
       user_id: userId,
       nome: authorName,
       email: userEmail,
@@ -518,11 +603,12 @@
       renderComments();
       if (elCommentInput) elCommentInput.value = "";
       updateCharCount();
+      cancelReply();
       if (btnSubmit) {
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = `<span>Publicar Recado 🤘</span>`;
       }
-      showToast("Comentário publicado no mural!", "success");
+      showToast(parentId ? "Resposta publicada no mural!" : "Comentário publicado no mural!", "success");
       return;
     }
 
@@ -533,6 +619,7 @@
         .from(tableName)
         .insert([
           {
+            parent_id: parentId,
             user_id: userId,
             nome: authorName,
             email: userEmail,
@@ -545,11 +632,36 @@
         ])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        // Se a coluna parent_id ainda não tiver sido criada no Supabase, tenta enviar sem parent_id
+        if (error.message && error.message.includes("parent_id")) {
+          console.warn("[Mural] Coluna parent_id ausente no Supabase, enviando como comentário raiz.");
+          const fallbackRes = await supabaseClient
+            .from(tableName)
+            .insert([
+              {
+                user_id: userId,
+                nome: authorName,
+                email: userEmail,
+                avatar_url: authorAvatar,
+                mensagem: rawText,
+                rock_badge: authorBadge,
+                likes_count: 0,
+                aprovado: true,
+              },
+            ])
+            .select();
+          if (fallbackRes.error) throw fallbackRes.error;
+          data[0] = fallbackRes.data[0];
+        } else {
+          throw error;
+        }
+      }
 
       if (elCommentInput) elCommentInput.value = "";
       updateCharCount();
-      showToast("Seu recado foi publicado no mural com sucesso! 🤘", "success");
+      cancelReply();
+      showToast(parentId ? "Sua resposta foi publicada no mural! 🤘" : "Seu recado foi publicado no mural! 🤘", "success");
 
       // Adiciona localmente caso o Realtime demore milissegundos
       if (data && data[0]) {
@@ -742,6 +854,18 @@
     elAuthModal = document.getElementById("auth-modal");
     elAuthFormLogin = document.getElementById("form-auth-login");
     elAuthFormRegister = document.getElementById("form-auth-register");
+
+    // Elementos de resposta a comentários
+    elReplyBanner = document.getElementById("reply-target-banner");
+    elReplyAuthor = document.getElementById("reply-target-author");
+    elReplyText = document.getElementById("reply-target-text");
+    elReplyParentId = document.getElementById("reply-parent-id");
+    elBtnCancelReply = document.getElementById("btn-cancel-reply");
+    elBtnPostCommentText = document.getElementById("btn-post-comment-text");
+
+    if (elBtnCancelReply) {
+      elBtnCancelReply.addEventListener("click", cancelReply);
+    }
 
     initSupabase();
 
