@@ -4913,4 +4913,290 @@ body { overflow-x: clip; }
   }
 }
 
+/* ============================================================
+   TELA DE ABERTURA (SPLASH SCREEN COM GLASSMORPHISM & BLUR)
+   ============================================================ */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, rgba(35, 6, 12, 0.92) 0%, rgba(14, 14, 18, 0.96) 60%, rgba(5, 5, 8, 0.99) 100%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.85s cubic-bezier(0.25, 1, 0.5, 1),
+              transform 0.85s cubic-bezier(0.25, 1, 0.5, 1),
+              filter 0.85s cubic-bezier(0.25, 1, 0.5, 1),
+              visibility 0.85s;
+  overflow: hidden;
+  user-select: none;
+}
+
+.splash-screen.splash-hide {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.05);
+  filter: blur(16px);
+  pointer-events: none;
+}
+
+.splash-backdrop-blur {
+  position: absolute;
+  inset: 0;
+  background: url("/live/assets/bg.jpg") center/cover no-repeat;
+  filter: blur(35px) brightness(0.22);
+  transform: scale(1.2);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.splash-glow-sphere {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 45, 63, 0.35) 0%, rgba(229, 9, 20, 0.1) 50%, transparent 70%);
+  filter: blur(60px);
+  animation: splashSpherePulse 4s ease-in-out infinite alternate;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes splashSpherePulse {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  100% { transform: scale(1.18); opacity: 1; }
+}
+
+.splash-card {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.8rem 3.4rem;
+  max-width: 480px;
+  width: 90%;
+  background: rgba(18, 18, 26, 0.68) !important;
+  border: 1px solid rgba(255, 45, 63, 0.35) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85),
+              0 0 50px rgba(255, 45, 63, 0.22),
+              inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  animation: splashCardZoomIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes splashCardZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.splash-logo-wrap {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.splash-logo {
+  width: 220px;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 45, 63, 0.7);
+  box-shadow: 0 0 35px rgba(255, 45, 63, 0.5), 0 10px 30px rgba(0, 0, 0, 0.7);
+  animation: splashLogoFloat 3s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes splashLogoFloat {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 30px rgba(255, 45, 63, 0.4), 0 10px 30px rgba(0, 0, 0, 0.7);
+  }
+  50% {
+    transform: translateY(-6px);
+    box-shadow: 0 0 45px rgba(255, 45, 63, 0.65), 0 16px 36px rgba(0, 0, 0, 0.85);
+  }
+}
+
+.splash-logo-glow {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 45, 63, 0.45) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+  animation: splashGlowPulse 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes splashGlowPulse {
+  0% { opacity: 0.4; transform: scale(0.95); }
+  100% { opacity: 0.9; transform: scale(1.08); }
+}
+
+.splash-text-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.splash-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 2.5px;
+  color: #ffffff;
+  text-shadow: 0 0 16px rgba(255, 45, 63, 0.75), 0 2px 6px rgba(0, 0, 0, 0.8);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.splash-slogan {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ff8590;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.splash-loading-wrap {
+  width: 100%;
+  margin-bottom: 1.2rem;
+}
+
+.splash-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  margin-bottom: 0.85rem;
+}
+
+.splash-progress-bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff2d3f, #ff6b7b, #ff2d3f);
+  background-size: 200% 100%;
+  border-radius: 10px;
+  box-shadow: 0 0 14px rgba(255, 45, 63, 0.9);
+  animation: splashProgressFill 3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards,
+             splashShine 1.5s linear infinite;
+}
+
+@keyframes splashProgressFill {
+  0% { width: 0%; }
+  25% { width: 35%; }
+  60% { width: 75%; }
+  100% { width: 100%; }
+}
+
+@keyframes splashShine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.splash-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.splash-status-text {
+  font-size: 0.76rem;
+  color: #c0c0d0;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.splash-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff2d3f;
+  box-shadow: 0 0 8px #ff2d3f;
+  animation: splashDotPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes splashDotPulse {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+.splash-sound-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 14px;
+}
+
+.splash-sound-bars span {
+  width: 3px;
+  background: #ff2d3f;
+  border-radius: 2px;
+  animation: splashBarBounce 0.8s ease-in-out infinite alternate;
+}
+.splash-sound-bars span:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+.splash-sound-bars span:nth-child(2) { height: 12px; animation-delay: 0.3s; }
+.splash-sound-bars span:nth-child(3) { height: 8px; animation-delay: 0.2s; }
+.splash-sound-bars span:nth-child(4) { height: 14px; animation-delay: 0.4s; }
+
+@keyframes splashBarBounce {
+  0% { height: 4px; }
+  100% { height: 14px; }
+}
+
+.splash-skip-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #a0a0b0;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.splash-skip-btn:hover {
+  border-color: rgba(255, 45, 63, 0.6);
+  color: #ffffff;
+  background: rgba(255, 45, 63, 0.15);
+  box-shadow: 0 0 12px rgba(255, 45, 63, 0.3);
+}
+
+@media (max-width: 480px) {
+  .splash-card {
+    padding: 2rem 1.6rem;
+  }
+  .splash-logo {
+    width: 170px;
+    height: 170px;
+  }
+  .splash-title {
+    font-size: 1.45rem;
+  }
+  .splash-slogan {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+  }
+}
+
+
 

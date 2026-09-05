@@ -1727,15 +1727,21 @@ function updateOsPipCanvas() {
   }
 }
 
+const defaultRadioCoverImg = new Image();
+defaultRadioCoverImg.src = "/live/assets/radio-caveira-logo.jpg";
+
 // Desenha a capa real ou o emblemático escudo da Rádio Caveira
 function drawPipCover(x, y, s) {
-  if (osPipCoverLoaded && osPipCoverImage) {
+  const targetImg = (osPipCoverLoaded && osPipCoverImage) ? osPipCoverImage : 
+                    (defaultRadioCoverImg.complete && defaultRadioCoverImg.naturalWidth !== 0 ? defaultRadioCoverImg : null);
+
+  if (targetImg) {
     try {
       osPipCtx.save();
       osPipCtx.beginPath();
       osPipCtx.roundRect(x, y, s, s, 16);
       osPipCtx.clip();
-      osPipCtx.drawImage(osPipCoverImage, x, y, s, s);
+      osPipCtx.drawImage(targetImg, x, y, s, s);
       osPipCtx.restore();
 
       // Borda vermelha ao redor da capa
