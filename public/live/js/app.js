@@ -1335,13 +1335,18 @@ acInput.addEventListener("keydown", (e) => {
   }
 });
 
+/* Rastreia o momento do último pedido enviado para detectar rate limit via CORS */
+let lastRequestSentAt = 0;
+
 async function submitRequestById(id) {
   const status = $("request-status");
   status.className = "request-status request-status--sending";
   status.textContent = "⏳ Enviando pedido…";
+  const requestStart = Date.now();
   try {
     const r = await fetch(`${azuraBase()}/request/${id}`, { method: "POST" });
     if (r.ok) {
+      lastRequestSentAt = Date.now();
       status.className = "request-status request-status--success";
       status.textContent = "✅ Pedido enviado! Aguarde entrar na fila.";
       return;
@@ -1365,7 +1370,17 @@ async function submitRequestById(id) {
     status.className = "request-status request-status--error";
   } catch (_) {
     status.className = "request-status request-status--error";
-    status.textContent = "⚠️ Erro de conexão. Verifique sua internet e tente novamente.";
+    // Quando o proxy/AzuraCast bloqueia por rate limit, pode retornar uma resposta
+    // sem cabeçalhos CORS, fazendo o navegador lançar TypeError de rede.
+    // Se o erro foi rápido (< 3s) E já enviamos um pedido recentemente (< 5 min),
+    // é quase certamente bloqueio por rate limit — não uma falha real de internet.
+    const elapsed       = Date.now() - requestStart;
+    const timeSinceLast = Date.now() - lastRequestSentAt;
+    if (elapsed < 3000 && timeSinceLast < 300000) {
+      status.textContent = "⏱️ Número máximo de solicitações atingido. Por favor, aguarde o tempo mínimo estipulado antes de efetuar um novo pedido.";
+    } else {
+      status.textContent = "⚠️ Erro de conexão. Verifique sua internet e tente novamente.";
+    }
   }
 }
 
