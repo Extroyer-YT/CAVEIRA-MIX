@@ -162,6 +162,12 @@ audio.addEventListener("error", () => {
   }
 });
 
+// Detecta dispositivo móvel (celular/tablet) sem afetar desktop
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.matchMedia && window.matchMedia("(max-width: 860px) and (pointer: coarse)").matches);
+}
+
 // Detecta travamento de currentTime (stream congelado sem disparar stalled)
 audio.addEventListener("timeupdate", () => {
   const now = Date.now();
@@ -170,6 +176,13 @@ audio.addEventListener("timeupdate", () => {
     lsmLastTimeTs = now;
     lsmClearStallTimer();
   } else if (isPlaying && (now - lsmLastTimeTs) > LIVE_STALL_TIMEOUT_MS) {
+    // No celular em segundo plano, o evento timeupdate é suspenso/reduzido pelo SO.
+    // Se o áudio não está pausado, não dispara falso stall que mataria a reprodução sem toque do usuário.
+    if (isMobileDevice() && document.visibilityState === "hidden" && !audio.paused) {
+      lsmLastTimeTs = now;
+      lsmClearStallTimer();
+      return;
+    }
     lsmArmStallTimer();
   }
 });
@@ -177,6 +190,12 @@ audio.addEventListener("timeupdate", () => {
 /* ---- Detecção de retorno do sleep / aba reativada ---- */
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && isPlaying) {
+    // Se no celular já estava tocando normalmente em segundo plano, mantém sem interromper
+    if (isMobileDevice() && !audio.paused && audio.readyState >= 2) {
+      lsmLastTimeTs = Date.now();
+      lsmCheckLag();
+      return;
+    }
     // Verifica quanto tempo a aba ficou oculta
     const elapsed = Date.now() - lsmLastTimeTs;
     if (elapsed > 4000) {
@@ -1520,6 +1539,89 @@ function setPipCover(url) {
   img.src = url;
 }
 
+let osPipWorker = null;
+let osPipBackgroundInterval = null;
+
+// Notifica a faixa de vídeo que um novo quadro foi desenhado no canvas
+function notifyOsPipFrame() {
+  if (osPipStream) {
+    const tracks = osPipStream.getVideoTracks();
+    if (tracks && tracks[0] && typeof tracks[0].requestFrame === "function") {
+      try { tracks[0].requestFrame(); } catch (_) {}
+    }
+  }
+}
+
+// Inicia worker em thread separada para manter a animação viva quando o celular suspender o requestAnimationFrame
+function startBackgroundPipWorker() {
+  if (osPipWorker || !window.Worker) return;
+  try {
+    const blobCode = `
+      let timer = null;
+      self.onmessage = function(e) {
+        if (e.data === 'start') {
+          if (!timer) {
+            timer = setInterval(function() {
+              self.postMessage('tick');
+            }, 60); // ~16 FPS contínuo no celular em background
+          }
+        } else if (e.data === 'stop') {
+          if (timer) { clearInterval(timer); timer = null; }
+        }
+      };
+    `;
+    const blob = new Blob([blobCode], { type: "application/javascript" });
+    osPipWorker = new Worker(URL.createObjectURL(blob));
+    osPipWorker.onmessage = (e) => {
+      if (e.data === "tick") {
+        if (document.pictureInPictureElement === osPipVideo) {
+          updateOsPipCanvas();
+        } else {
+          stopBackgroundPipWorker();
+        }
+      }
+    };
+    osPipWorker.postMessage("start");
+  } catch (err) {
+    console.warn("Worker de background PiP não pôde ser iniciado:", err);
+  }
+}
+
+function stopBackgroundPipWorker() {
+  if (osPipWorker) {
+    try {
+      osPipWorker.postMessage("stop");
+      osPipWorker.terminate();
+    } catch (_) {}
+    osPipWorker = null;
+  }
+}
+
+function startBackgroundPipLoop() {
+  if (!isMobileDevice()) return;
+  startBackgroundPipWorker();
+  if (!osPipBackgroundInterval) {
+    osPipBackgroundInterval = setInterval(() => {
+      if (document.pictureInPictureElement === osPipVideo) {
+        updateOsPipCanvas();
+        if (isPlaying && osPipVideo && osPipVideo.paused) {
+          osPipVideo.play().catch(() => {});
+        }
+      } else {
+        stopBackgroundPipLoop();
+      }
+    }, 100);
+  }
+}
+
+function stopBackgroundPipLoop() {
+  stopBackgroundPipWorker();
+  if (osPipBackgroundInterval) {
+    clearInterval(osPipBackgroundInterval);
+    osPipBackgroundInterval = null;
+  }
+}
+
 // Inicializa Canvas e Stream de Vídeo
 function setupOsPip() {
   if (osPipVideo) return;
@@ -1538,6 +1640,41 @@ function setupOsPip() {
     osPipVideo.srcObject = osPipStream;
   } catch (e) {
     console.warn("Canvas captureStream não suportado:", e);
+  }
+
+  // No celular: adiciona faixa de áudio inaudível e desmuta com volume mínimo,
+  // impedindo que o Android/Chrome congele o PiP em segundo plano como vídeo mudo descartável
+  if (isMobileDevice()) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        const silentCtx = new AC();
+        const dest = silentCtx.createMediaStreamDestination();
+        const osc = silentCtx.createOscillator();
+        const gain = silentCtx.createGain();
+        gain.gain.value = 0.0001; // silêncio absoluto inaudível
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start();
+        const [silentTrack] = dest.stream.getAudioTracks();
+        if (silentTrack && osPipStream && typeof osPipStream.addTrack === "function") {
+          osPipStream.addTrack(silentTrack);
+          osPipVideo.muted = false;
+          osPipVideo.volume = 0.01;
+        }
+      }
+    } catch (_) {}
+
+    // Sincronização dos controles nativos do PiP flutuante no celular
+    osPipVideo.addEventListener("play", () => {
+      if (!isPlaying) play();
+    });
+    osPipVideo.addEventListener("pause", () => {
+      // Se pausado intencionalmente pelo usuário através do botão do PiP do Android
+      if (isPlaying && document.visibilityState === "visible") {
+        pause();
+      }
+    });
   }
 
   // Se a capa da música atual já estiver no player, aproveita
@@ -1564,6 +1701,7 @@ function setupOsPip() {
   // Quando o usuário fecha a janela flutuante nativa
   osPipVideo.addEventListener("leavepictureinpicture", () => {
     stopOsPipLoop();
+    stopBackgroundPipLoop();
     const btnToggleFloating = $("btn-toggle-floating-player");
     const pipBtnOs = $("pip-btn-os-pip");
     const stickyBtnOs = $("sticky-btn-os-pip");
@@ -1593,6 +1731,11 @@ function startOsPipLoop() {
     }
   };
   osPipAnimId = requestAnimationFrame(loop);
+
+  // Se já estiver em segundo plano no celular ao iniciar
+  if (isMobileDevice() && document.visibilityState === "hidden") {
+    startBackgroundPipLoop();
+  }
 }
 
 function stopOsPipLoop() {
@@ -1600,7 +1743,25 @@ function stopOsPipLoop() {
     cancelAnimationFrame(osPipAnimId);
     osPipAnimId = null;
   }
+  stopBackgroundPipLoop();
 }
+
+// Monitora minimização/segundo plano no celular para manter o PiP vivo sem paralisar
+document.addEventListener("visibilitychange", () => {
+  if (isMobileDevice() && document.pictureInPictureElement === osPipVideo) {
+    if (document.visibilityState === "hidden") {
+      startBackgroundPipLoop();
+      if (isPlaying && osPipVideo && osPipVideo.paused) {
+        osPipVideo.play().catch(() => {});
+      }
+    } else {
+      stopBackgroundPipLoop();
+      if (!osPipAnimId) {
+        startOsPipLoop();
+      }
+    }
+  }
+});
 
 // Renderizador da tela do PiP Nativo
 function updateOsPipCanvas() {
@@ -1725,6 +1886,7 @@ function updateOsPipCanvas() {
     osPipCtx.font = "13px 'Outfit', -apple-system, sans-serif";
     osPipCtx.fillText(isPlaying ? "Transmissão 24h sem interrupções ⚡" : "Toque em play no site para ouvir", textLeft, 225);
   }
+  notifyOsPipFrame();
 }
 
 const defaultRadioCoverImg = new Image();
