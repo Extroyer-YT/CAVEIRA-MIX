@@ -549,17 +549,23 @@
       <div class="request-form">
         <div class="request-searchbar">
           <div class="request-ac" id="request-ac">
-            <input id="request-search" type="text" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="request-results" placeholder="Buscar música no acervo da rádio…" />
-            <div id="request-results" class="request-results" role="listbox"></div>
+            <input id="request-search" type="text" autocomplete="off" role="combobox"
+              aria-expanded="false" aria-controls="request-results" aria-autocomplete="list"
+              placeholder="Buscar música no acervo da rádio…" />
+            <div id="request-results" class="request-results" role="listbox" aria-label="Músicas encontradas"></div>
           </div>
-          <button id="request-submit" class="btn-request">Enviar pedido</button>
+          <button id="request-submit" class="btn-request" disabled aria-label="Enviar pedido de música">Enviar pedido</button>
         </div>
+        <p id="request-catalog-status" class="request-catalog-status" style="display:none" aria-live="polite"></p>
         <div class="bands-accordion">
           <button type="button" id="bands-toggle" class="bands-toggle" aria-expanded="false" aria-controls="bands-panel">
-            <span id="bands-label">🎸 Bandas disponíveis no acervo</span>
+            <span id="bands-label">🎸 Bandas no acervo</span>
             <span class="bands-caret">▾</span>
           </button>
           <div id="bands-panel" class="bands-panel">
+            <div class="bands-filter-wrap">
+              <input id="bands-filter" type="text" class="bands-filter-input" placeholder="🔍 Filtrar banda…" autocomplete="off" />
+            </div>
             <ul class="bands-list" id="bands-list">
               <li class="muted">Carregando acervo…</li>
             </ul>

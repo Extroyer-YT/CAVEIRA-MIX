@@ -1920,18 +1920,42 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 .bands-caret { color: #ff2d3f; transition: transform .28s ease; }
 .bands-toggle[aria-expanded="true"] .bands-caret { transform: rotate(180deg); }
 .bands-panel { max-height: 0; overflow: hidden; transition: max-height .35s ease; }
-.bands-panel.open { max-height: 520px; }
+.bands-panel.open { max-height: 600px; }
+
+/* Filtro de bandas */
+.bands-filter-wrap {
+  padding: 8px 10px 4px;
+}
+.bands-filter-input {
+  width: 100%; padding: 7px 12px; border-radius: 8px; font-size: 13px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,45,63,0.3);
+  color: #fff; outline: none; box-sizing: border-box;
+  transition: border-color .2s ease;
+}
+.bands-filter-input:focus { border-color: rgba(255,45,63,0.7); }
+.bands-filter-input::placeholder { color: rgba(255,180,190,0.5); }
+
 .bands-list {
   list-style: none; margin: 0; padding: 6px 10px 12px;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px;
+  max-height: 460px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: rgba(255,45,63,.5) transparent;
 }
+.bands-list::-webkit-scrollbar { width: 6px; }
+.bands-list::-webkit-scrollbar-thumb { background: rgba(255,45,63,.45); border-radius: 6px; }
 .bands-list li {
   cursor: pointer; padding: 8px 10px; border-radius: 10px; color: #e9e9ee;
   border: 1px solid rgba(255,45,63,0.18); background: rgba(255,255,255,0.02);
   transition: background .2s ease, border-color .2s ease, color .2s ease;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
 .bands-list li:hover {
   background: rgba(255,45,63,0.18); border-color: rgba(255,45,63,0.55); color: #fff;
+}
+.band-name { font-size: 13px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.band-count {
+  font-size: 11px; color: #ff8f99; background: rgba(255,45,63,0.15);
+  border-radius: 20px; padding: 1px 6px; flex-shrink: 0; white-space: nowrap;
 }
 @media (max-width: 640px) { .bands-list { grid-template-columns: 1fr 1fr; } }
 
@@ -1996,6 +2020,31 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 .rr-head-title { color: #fff; font-weight: 700; font-size: 14px; }
 .rr-head-count { color: #ff8f99; font-size: 12px; white-space: nowrap; }
 .rr-list { display: flex; flex-direction: column; gap: 4px; }
+
+/* Item ativo por navegação por teclado */
+.request-results .rr-item.rr-active {
+  background: rgba(255,45,63,0.22);
+  border-color: rgba(255,45,63,0.6);
+  outline: 2px solid rgba(255,45,63,0.5);
+  outline-offset: -1px;
+}
+.request-results .rr-item.rr-active .rr-pick { opacity: 1; }
+
+/* Indicador de carregamento do catálogo */
+.request-catalog-status {
+  font-size: 13px; color: #ffb3ba; text-align: center;
+  padding: 6px 0 2px; margin: 0;
+  animation: pulse-opacity 1.4s ease infinite;
+}
+@keyframes pulse-opacity { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* Status de envio: variantes coloridas */
+.request-status--sending { color: #ffcc66 !important; }
+.request-status--success { color: #66ffb2 !important; }
+.request-status--error   { color: #ff8f99 !important; }
+
+/* Mensagem de resultado vazio aprimorada */
+.rr-empty small { display: block; font-size: 11px; opacity: .7; margin-top: 4px; }
 
 /* ============================================================
    MOLDURA FUTURISTA (HUD Sci-Fi) — cards principais

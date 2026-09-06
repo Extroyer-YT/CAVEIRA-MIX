@@ -987,56 +987,108 @@ function azuraBase() {
   const base = (CFG.AZURACAST_BASE_URL || "").replace(/\/+$/, "");
   return `${base}/api/station/${CFG.AZURACAST_STATION_ID || "1"}`;
 }
-/* --- Acervo completo (autocomplete) --- */
+
+/* --- Normalização inteligente para busca (remove acentos, pontuação, espaços extras) --- */
+function normalizeSearch(str) {
+  return String(str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")        // remove diacríticos (ü→u, ö→o, ã→a etc)
+    .replace(/['\'\-\/\\.,!?&:;()\[\]]/g, " ") // pontuação → espaço (AC/DC→ac dc, Guns N'→guns n)
+    .replace(/\s+/g, " ")                    // múltiplos espaços → um
+    .trim();
+}
+
+/* --- Acervo completo (autocomplete) com cache sessionStorage --- */
+const CATALOG_CACHE_KEY = "cvm_catalog_v3";
+const CATALOG_CACHE_TTL = 15 * 60 * 1000; // 15 minutos
+
+function parseCatalogRows(rawRows) {
+  return rawRows
+    .map((it) => {
+      const s = it.song || {};
+      const yearRaw = s.year || (s.custom_fields && s.custom_fields.year) || "";
+      const year = /^\d{4}$/.test(String(yearRaw)) ? String(yearRaw) : "";
+      const title  = s.title  || "";
+      const artist = s.artist || "";
+      const album  = s.album  || "";
+      return {
+        id: it.request_id || "",
+        sid: String(s.id || ""),
+        title,
+        artist,
+        album,
+        text: s.text || "",
+        year,
+        art: s.art || "",
+        // Campo de busca normalizado: sem acentos, sem pontuação — garante que
+        // 'motorhead' encontra 'Motörhead', 'acdc' encontra 'AC/DC', etc.
+        hay: normalizeSearch(`${title} ${artist} ${album}`),
+      };
+    })
+    .filter((x) => x.title || x.artist)
+    .sort((a, b) => (a.title || "").localeCompare(b.title || "", "pt-BR"));
+}
+
 let catalogPromise = null;
 function loadCatalog() {
   if (catalogPromise) return catalogPromise;
+
+  // Verifica cache no sessionStorage (evita recarregar a cada reload de aba)
+  try {
+    const cached = sessionStorage.getItem(CATALOG_CACHE_KEY);
+    if (cached) {
+      const { ts, data } = JSON.parse(cached);
+      if (Date.now() - ts < CATALOG_CACHE_TTL && Array.isArray(data) && data.length > 0) {
+        catalogPromise = Promise.resolve(data);
+        return catalogPromise;
+      }
+    }
+  } catch (_) { /* sessionStorage indisponível, continua sem cache */ }
+
   catalogPromise = (async () => {
-    const rows = [];
-    // Percorre todas as páginas da API até carregar o acervo completo.
-    // A API limita o per_page — usamos o valor real devolvido e buscamos em paralelo.
-    const first = await fetch(`${azuraBase()}/requests?per_page=500&page=1`).then((r) => r.json());
-    if (Array.isArray(first)) {
-      rows.push(...first);
-    } else if (first && Array.isArray(first.rows)) {
-      rows.push(...first.rows);
-      const perPage = first.per_page || first.rows.length || 25;
-      const pages = first.total_pages || Math.ceil((first.total || 0) / perPage) || 1;
-      const BATCH = 10;
-      for (let page = 2; page <= pages; page += BATCH) {
-        const batch = [];
-        for (let p = page; p < page + BATCH && p <= pages; p++) {
-          batch.push(
-            fetch(`${azuraBase()}/requests?per_page=${perPage}&page=${p}`)
-              .then((r) => r.json())
-              .catch(() => null),
-          );
+    // O endpoint SEM parâmetros de paginação devolve todas as músicas de uma vez.
+    // Isso é muito mais rápido e confiável do que paginar 100+ páginas em paralelo.
+    const raw = await fetch(`${azuraBase()}/requests`).then((r) => r.json());
+    let rows = [];
+    if (Array.isArray(raw)) {
+      // Resposta direta sem paginação — ideal
+      rows = raw;
+    } else if (raw && Array.isArray(raw.rows)) {
+      // Fallback: a API devolveu um objeto paginado
+      rows.push(...raw.rows);
+      // Se ainda houver mais páginas, carrega sequencialmente com retry
+      const perPage = raw.per_page || raw.rows.length || 25;
+      const pages   = raw.total_pages || Math.ceil((raw.total || 0) / perPage) || 1;
+      const CONCURRENCY = 4; // mantém baixo para não sofrer rate limit
+      const MAX_RETRIES = 3;
+      const fetchPage = async (p) => {
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          try {
+            const res = await fetch(`${azuraBase()}/requests?per_page=${perPage}&page=${p}`);
+            if (res.ok) return res.json();
+          } catch (_) {}
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
         }
+        return null;
+      };
+      for (let page = 2; page <= pages; page += CONCURRENCY) {
+        const batch = [];
+        for (let p = page; p < page + CONCURRENCY && p <= pages; p++) batch.push(fetchPage(p));
         (await Promise.all(batch)).forEach((d) => {
           if (d) rows.push(...(Array.isArray(d) ? d : d.rows || []));
         });
       }
     }
 
+    const catalog = parseCatalogRows(rows);
 
-    return rows.map((it) => {
-      const s = it.song || {};
-      const yearRaw = s.year || (s.custom_fields && s.custom_fields.year) || "";
-      const year = /^\d{4}$/.test(String(yearRaw)) ? String(yearRaw) : "";
-      return {
-        id: it.request_id || "",
-        sid: String(s.id || ""),
-        title: s.title || "",
-        artist: s.artist || "",
-        album: s.album || "",
-        text: s.text || "",
-        year,
-        art: s.art || "",
-        hay: `${s.title || ""} ${s.artist || ""} ${s.album || ""}`.toLowerCase(),
-      };
-    })
-      .filter((x) => x.title || x.artist)
-      .sort((a, b) => (a.title || "").localeCompare(b.title || "", "pt-BR"));
+    // Salva no cache
+    try {
+      sessionStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: catalog }));
+    } catch (_) {}
+
+    return catalog;
   })().catch(() => []);
   return catalogPromise;
 }
@@ -1069,8 +1121,8 @@ function loadFolders() {
   if (foldersPromise) return foldersPromise;
   foldersPromise = (async () => {
     const catalog = await loadCatalog();
-    const bySong = new Map();
-    const groups = new Map(); // key -> { names: Map<name, count>, count }
+    const bySong  = new Map();
+    const groups  = new Map(); // key -> { names: Map<name, count>, songCount }
 
     catalog.forEach((it) => {
       let name = primaryArtist(it.artist);
@@ -1078,9 +1130,9 @@ function loadFolders() {
       const key = bandKey(name);
       if (!key) return;
       if (it.sid) bySong.set(it.sid, key);
-      const g = groups.get(key) || { names: new Map(), count: 0 };
+      const g = groups.get(key) || { names: new Map(), songCount: 0 };
       g.names.set(name, (g.names.get(name) || 0) + 1);
-      g.count += 1;
+      g.songCount += 1;
       groups.set(key, g);
     });
 
@@ -1090,11 +1142,11 @@ function loadFolders() {
         const best = [...g.names.entries()].sort(
           (a, b) => b[1] - a[1] || a[0].length - b[0].length || a[0].localeCompare(b[0], "pt-BR"),
         )[0][0];
-        return { key, name: best };
+        return { key, name: best, songCount: g.songCount };
       })
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 
-    return { bands: bands.map((b) => b.name), bySong };
+    return { bands, bySong };
   })().catch(() => ({ bands: [], bySong: new Map() }));
   return foldersPromise;
 }
@@ -1102,13 +1154,14 @@ function loadFolders() {
 
 
 
-const acBox = $("request-ac");
-const acInput = $("request-search");
-const acOut = $("request-results");
+const acBox    = $("request-ac");
+const acInput  = $("request-search");
+const acOut    = $("request-results");
 const submitBtn = $("request-submit");
 
 /* Música selecionada pelo usuário — pedidos SÓ acontecem com seleção explícita */
 let selectedTrack = null;
+let acActiveIdx   = -1; // índice do item focado por teclado
 
 function setSelected(track) {
   selectedTrack = track;
@@ -1132,12 +1185,12 @@ function closeAC() {
 }
 
 const AC_CHUNK = 40;
-let acItems = [];
-let acShown = 0;
+let acItems   = [];
+let acShown   = 0;
 
 function acItemHtml(it, i) {
   return `
-    <div class="rr-item" role="option" data-i="${i}">
+    <div class="rr-item" role="option" tabindex="-1" data-i="${i}">
       ${it.art
         ? `<img class="rr-art" src="${escapeHtml(it.art)}" alt="" loading="lazy" />`
         : '<span class="rr-art rr-art-fallback">🎵</span>'}
@@ -1157,11 +1210,22 @@ function acAppendChunk() {
   acShown += next.length;
 }
 
+function acSetActive(idx) {
+  const all = acOut.querySelectorAll(".rr-item");
+  all.forEach((el) => el.classList.remove("rr-active"));
+  if (idx < 0 || idx >= all.length) { acActiveIdx = -1; return; }
+  acActiveIdx = idx;
+  const target = all[idx];
+  target.classList.add("rr-active");
+  target.scrollIntoView({ block: "nearest" });
+}
+
 function renderAC(items, headerLabel) {
-  acItems = items;
-  acShown = 0;
+  acItems    = items;
+  acShown    = 0;
+  acActiveIdx = -1;
   if (!items.length) {
-    acOut.innerHTML = '<p class="rr-empty">Nenhuma música encontrada no acervo.</p>';
+    acOut.innerHTML = '<p class="rr-empty">Nenhuma música encontrada no acervo.<br><small>Tente sem acentos ou abreviações (ex: "motorhead", "acdc").</small></p>';
     openAC();
     return;
   }
@@ -1184,6 +1248,14 @@ acOut.addEventListener("click", (e) => {
   if (!el) return;
   const it = acItems[Number(el.dataset.i)];
   if (!it) return;
+  acSelectItem(it);
+});
+acOut.addEventListener("scroll", () => {
+  if (acOut.scrollTop + acOut.clientHeight >= acOut.scrollHeight - 120) acAppendChunk();
+});
+
+/* Seleciona um item pelo índice e preenche o campo */
+function acSelectItem(it) {
   acInput.value = `${it.title} — ${it.artist}`.trim();
   setSelected(it);
   const st = $("request-status");
@@ -1192,19 +1264,25 @@ acOut.addEventListener("click", (e) => {
   acInput.focus();
   const end = acInput.value.length;
   acInput.setSelectionRange(end, end);
-});
-acOut.addEventListener("scroll", () => {
-  if (acOut.scrollTop + acOut.clientHeight >= acOut.scrollHeight - 120) acAppendChunk();
-});
+}
 
 async function updateAC(query, headerLabel) {
+  // Mostra carregando só se ainda não tiver catálogo
+  const catalogEl = $("request-catalog-status");
+  if (!catalogPromise && catalogEl) {
+    catalogEl.textContent = "⏳ Carregando acervo completo…";
+    catalogEl.style.display = "block";
+  }
   const catalog = await loadCatalog();
-  const q = (query || "").trim().toLowerCase();
+  if (catalogEl) catalogEl.style.display = "none";
+  // Normaliza o termo buscado da mesma forma que os itens do catálogo
+  const q     = normalizeSearch(query || "");
   const terms = q.split(/\s+/).filter(Boolean);
   const items = terms.length
     ? catalog.filter((it) => terms.every((t) => it.hay.includes(t)))
     : catalog;
-  renderAC(items, headerLabel || (q ? `Resultados para "${query.trim()}"` : "Músicas disponíveis no acervo"));
+  const rawQ = (query || "").trim();
+  renderAC(items, headerLabel || (rawQ ? `Resultados para "${rawQ}"` : `Acervo completo (${catalog.length} músicas)`));
 }
 
 /* Filtra TODAS as músicas de uma PASTA/banda (sem limite de resultados) */
@@ -1216,7 +1294,8 @@ async function updateACByBand(band) {
     return (mapped || bandKey(primaryArtist(it.artist))) === key;
   });
   if (!items.length) items = catalog.filter((it) => bandKey(`${it.artist} ${it.text}`).includes(key));
-  renderAC(items, band);
+  const found = folders.bands.find((b) => b.name === band);
+  renderAC(items, `${band}${found ? ` (${found.songCount} faixas)` : ""}`);
 }
 
 
@@ -1234,17 +1313,59 @@ document.addEventListener("click", (e) => {
   if (acBox.contains(e.target) || e.target.closest(".bands-accordion")) return;
   closeAC();
 });
-acInput.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAC(); });
+
+/* Navegação por teclado no dropdown */
+acInput.addEventListener("keydown", (e) => {
+  const items = acOut.querySelectorAll(".rr-item");
+  if (e.key === "Escape") { closeAC(); return; }
+  if (!acOut.classList.contains("open") || !items.length) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    // Carrega mais itens se chegar ao fim dos renderizados
+    if (acActiveIdx >= items.length - 1) acAppendChunk();
+    acSetActive(Math.min(acActiveIdx + 1, acOut.querySelectorAll(".rr-item").length - 1));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    acSetActive(Math.max(acActiveIdx - 1, -1));
+    if (acActiveIdx < 0) acInput.focus();
+  } else if (e.key === "Enter" && acActiveIdx >= 0) {
+    e.preventDefault();
+    const it = acItems[Number(acOut.querySelectorAll(".rr-item")[acActiveIdx]?.dataset.i)];
+    if (it) acSelectItem(it);
+  }
+});
 
 async function submitRequestById(id) {
   const status = $("request-status");
-  status.textContent = "Enviando pedido…";
+  status.className = "request-status request-status--sending";
+  status.textContent = "⏳ Enviando pedido…";
   try {
     const r = await fetch(`${azuraBase()}/request/${id}`, { method: "POST" });
-    if (!r.ok) throw new Error("falhou");
-    status.textContent = "✅ Pedido enviado! Aguarde entrar na fila.";
+    if (r.ok) {
+      status.className = "request-status request-status--success";
+      status.textContent = "✅ Pedido enviado! Aguarde entrar na fila.";
+      return;
+    }
+    // Tenta ler a mensagem real de erro da API do AzuraCast
+    let errMsg = "";
+    try {
+      const body = await r.json();
+      errMsg = body.message || body.error || "";
+    } catch (_) {}
+    // Mapeia códigos HTTP para mensagens amigáveis
+    if (r.status === 429 || (errMsg && errMsg.match(/limit|cooldown|recently/i))) {
+      status.textContent = "⏱️ Você atingiu o limite de pedidos. Aguarde um momento e tente novamente.";
+    } else if (r.status === 403 || (errMsg && errMsg.match(/not allow|disabled|unavail/i))) {
+      status.textContent = "🚫 Esta música não está disponível para pedido no momento.";
+    } else if (errMsg) {
+      status.textContent = `⚠️ ${errMsg}`;
+    } else {
+      status.textContent = "⚠️ Não foi possível enviar o pedido agora. Tente outra música.";
+    }
+    status.className = "request-status request-status--error";
   } catch (_) {
-    status.textContent = "⚠️ Não foi possível enviar o pedido agora.";
+    status.className = "request-status request-status--error";
+    status.textContent = "⚠️ Erro de conexão. Verifique sua internet e tente novamente.";
   }
 }
 
@@ -1263,38 +1384,63 @@ submitBtn.addEventListener("click", async () => {
   await submitRequestById(selectedTrack.id);
 });
 
-/* Accordion de bandas disponíveis (dinâmico) */
+/* Accordion de bandas disponíveis (dinâmico, com filtro e contagem de faixas) */
 (function setupBands() {
-  const toggle = $("bands-toggle");
-  const panel = $("bands-panel");
-  const list = $("bands-list");
-  const label = $("bands-label");
+  const toggle      = $("bands-toggle");
+  const panel       = $("bands-panel");
+  const list        = $("bands-list");
+  const label       = $("bands-label");
+  const filterInput = $("bands-filter");
   if (!toggle || !panel || !list) return;
+
+  let allBands = []; // { name, songCount }
+
   toggle.addEventListener("click", () => {
     const open = panel.classList.toggle("open");
     toggle.setAttribute("aria-expanded", String(open));
+    if (open && filterInput) { filterInput.value = ""; renderBandList(allBands); filterInput.focus(); }
   });
-  const render = (bands) => {
-    if (label) label.textContent = `🎸 Bandas disponíveis no acervo (${bands.length})`;
-    list.innerHTML = bands.map((b) => `<li>${escapeHtml(b)}</li>`).join("");
+
+  function renderBandList(bands) {
+    list.innerHTML = bands
+      .map((b) => `<li data-band="${escapeHtml(b.name)}"><span class="band-name">${escapeHtml(b.name)}</span><span class="band-count">${b.songCount}</span></li>`)
+      .join("");
     list.querySelectorAll("li").forEach((li) => {
       li.addEventListener("click", () => {
+        const band = li.dataset.band;
         panel.classList.remove("open");
         toggle.setAttribute("aria-expanded", "false");
-        acInput.value = li.textContent.trim();
+        acInput.value = band;
         setSelected(null);
         const st = $("request-status");
         if (st) st.textContent = "";
         acInput.focus();
         const end = acInput.value.length;
         acInput.setSelectionRange(end, end);
-        updateACByBand(li.textContent.trim());
+        updateACByBand(band);
       });
     });
+  }
+
+  if (filterInput) {
+    filterInput.addEventListener("input", () => {
+      const q = normalizeSearch(filterInput.value);
+      const filtered = q
+        ? allBands.filter((b) => normalizeSearch(b.name).includes(q))
+        : allBands;
+      renderBandList(filtered);
+    });
+    filterInput.addEventListener("keydown", (e) => e.stopPropagation());
+  }
+
+  const render = (bands) => {
+    allBands = bands;
+    if (label) label.textContent = `🎸 Bandas no acervo (${bands.length})`;
+    renderBandList(bands);
   };
+
   window.__cvmBandsRefresh = render;
   loadFolders().then(({ bands }) => render(bands));
-
 })();
 
 
