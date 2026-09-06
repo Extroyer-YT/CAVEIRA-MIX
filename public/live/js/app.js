@@ -232,7 +232,10 @@ function updatePlayButtonUI() {
 function play() {
   lsmRetries = 0;
   lsmReconnecting = false;
-  if (!audio.src || audio.src === window.location.href) lsmLoadSource();
+  // No celular: se o áudio estiver pausado (ou sem src), recarrega o stream para conectar na transmissão ao vivo
+  if (!audio.src || audio.src === window.location.href || (isMobileDevice() && audio.paused)) {
+    lsmLoadSource();
+  }
   audio.play().then(() => {
     isPlaying = true;
     updatePlayButtonUI();
@@ -241,9 +244,14 @@ function play() {
     lsmSetStatus("");
     lsmStartLagWatcher();
     vmu.ensureInit(audio);
+    // Sincroniza o PiP no celular
+    if (isMobileDevice() && osPipVideo && osPipVideo.paused && document.pictureInPictureElement === osPipVideo) {
+      osPipVideo.play().catch(() => {});
+    }
     if (typeof updateMediaSessionPlaybackState === "function") updateMediaSessionPlaybackState();
     if (typeof updateOsPipCanvas === "function") updateOsPipCanvas();
-  }).catch(() => {
+  }).catch((err) => {
+    console.warn("Erro ao iniciar áudio:", err);
     lsmSetStatus("Não foi possível iniciar. Toque no botão novamente.");
   });
 }
@@ -256,6 +264,10 @@ function pause() {
   equalizer.classList.remove("active");
   lsmStopLagWatcher();
   lsmClearStallTimer();
+  // Sincroniza o PiP no celular
+  if (isMobileDevice() && osPipVideo && !osPipVideo.paused && document.pictureInPictureElement === osPipVideo) {
+    osPipVideo.pause();
+  }
   if (typeof updateMediaSessionPlaybackState === "function") updateMediaSessionPlaybackState();
   if (typeof updateOsPipCanvas === "function") updateOsPipCanvas();
 }
@@ -1667,11 +1679,19 @@ function setupOsPip() {
 
     // Sincronização dos controles nativos do PiP flutuante no celular
     osPipVideo.addEventListener("play", () => {
-      if (!isPlaying) play();
+      if (!isPlaying) {
+        play();
+      }
     });
     osPipVideo.addEventListener("pause", () => {
-      // Se pausado intencionalmente pelo usuário através do botão do PiP do Android
-      if (isPlaying && document.visibilityState === "visible") {
+      // Ignora se o pause foi disparo involuntário pelo browser durante a transição para segundo plano
+      if (document.visibilityState === "hidden" && (Date.now() - lastVisibilityChangeTs < 350)) {
+        if (isPlaying) {
+          osPipVideo.play().catch(() => {});
+        }
+        return;
+      }
+      if (isPlaying) {
         pause();
       }
     });
@@ -1746,8 +1766,11 @@ function stopOsPipLoop() {
   stopBackgroundPipLoop();
 }
 
+let lastVisibilityChangeTs = 0;
+
 // Monitora minimização/segundo plano no celular para manter o PiP vivo sem paralisar
 document.addEventListener("visibilitychange", () => {
+  lastVisibilityChangeTs = Date.now();
   if (isMobileDevice() && document.pictureInPictureElement === osPipVideo) {
     if (document.visibilityState === "hidden") {
       startBackgroundPipLoop();
