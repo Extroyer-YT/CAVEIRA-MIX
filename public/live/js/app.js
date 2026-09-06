@@ -1354,7 +1354,7 @@ async function submitRequestById(id) {
     } catch (_) {}
     // Mapeia códigos HTTP para mensagens amigáveis
     if (r.status === 429 || (errMsg && errMsg.match(/limit|cooldown|recently/i))) {
-      status.textContent = "⏱️ Você atingiu o limite de pedidos. Aguarde um momento e tente novamente.";
+      status.textContent = "⏱️ Número máximo de solicitações atingido. Por favor, aguarde o tempo mínimo estipulado antes de efetuar um novo pedido.";
     } else if (r.status === 403 || (errMsg && errMsg.match(/not allow|disabled|unavail/i))) {
       status.textContent = "🚫 Esta música não está disponível para pedido no momento.";
     } else if (errMsg) {
