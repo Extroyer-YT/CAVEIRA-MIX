@@ -27,21 +27,16 @@ body {
   background: var(--black);
   color: var(--white);
   min-height: 100vh;
-  overflow-x: clip;
+  overflow-x: hidden;
   position: relative;
 }
 
-/* Trava o zoom em 70% no Computador (Desktop) e mantém 100% no Celular/Tablet */
-@media (min-width: 1025px) {
-  body {
-    zoom: 0.70;
-  }
-}
-
-@media (max-width: 1024px) {
-  body {
-    zoom: 1;
-  }
+/* ============================================================
+   SCALE ROOT — wrapper que garante layout correto em todos os browsers
+   O layout responsivo é feito via flexbox CSS puro
+   ============================================================ */
+#scale-root {
+  width: 100%;
 }
 
 /* --- Fundo dinâmico --- */
@@ -278,27 +273,26 @@ body {
   }
 }
 
-/* --- Hero Stage (Layout do Player + Patrocinadores) --- */
+/* --- Hero Stage (Layout do Player + Patrocinadores) — FLEXBOX 3 COLUNAS --- */
 .hero-stage {
   position: relative;
   width: 100%;
   margin-top: 1.5rem;
   display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: stretch;
+  gap: 1.2rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 /* ============================================================
-   QUADRO DE PATROCINADORES (CENTRALIZADO ENTRE PLAYER E BORDA ESQUERDA)
+   QUADRO DE PATROCINADORES (COLUNA ESQUERDA DO PLAYER)
    ============================================================ */
 .sponsors-container {
-  width: 480px;
+  flex: 0 0 clamp(220px, 22vw, 310px);
   display: flex;
-  position: absolute;
-  left: calc(25vw - 90px);
-  transform: translateX(-50%);
-  top: 0;
-  bottom: 0;
   min-height: 460px;
   z-index: 10;
 }
@@ -637,16 +631,11 @@ body {
 }
 
 /* ============================================================
-   QUADRO DO EQUALIZADOR & AMPLIFICADOR (LADO DIREITO DO PLAYER)
+   QUADRO DO EQUALIZADOR & AMPLIFICADOR (COLUNA DIREITA DO PLAYER)
    ============================================================ */
 .equalizer-container {
-  width: 480px;
+  flex: 0 0 clamp(220px, 22vw, 310px);
   display: flex;
-  position: absolute;
-  right: calc(25vw - 90px);
-  transform: translateX(50%);
-  top: 0;
-  bottom: 0;
   min-height: 460px;
   z-index: 10;
 }
@@ -1018,9 +1007,10 @@ body {
 
 /* --- Player card --- */
 .player-card {
-  margin: 0 auto;
+  margin: 0;
   padding: 2rem;
-  width: min(760px, 94vw);
+  flex: 1 1 400px;
+  max-width: 760px;
   display: flex;
   gap: 2rem;
   align-items: center;
@@ -1031,33 +1021,32 @@ body {
   z-index: 5;
 }
 
-@media (max-width: 1440px) {
+/* Colapsa para coluna única em telas menores que 900px */
+@media (max-width: 900px) {
   .hero-stage {
     flex-direction: column;
     align-items: center;
     width: 100%;
     gap: 1.5rem;
+    padding: 0;
   }
 
   .sponsors-container {
-    position: static;
-    left: auto;
-    transform: none;
+    flex: none;
     width: min(760px, 94vw);
     height: auto;
     margin-bottom: 0.5rem;
   }
 
   .equalizer-container {
-    position: static;
-    right: auto;
-    transform: none;
+    flex: none;
     width: min(760px, 94vw);
     height: auto;
     margin-top: 0.5rem;
   }
 
   .player-card {
+    flex: none;
     width: min(760px, 94vw);
     margin: 0 auto;
   }
@@ -4992,22 +4981,11 @@ body { overflow-x: clip; }
   user-select: none;
 }
 
-/* No desktop (>1024px), o body tem zoom: 0.70, então compensamos exatamente com 1.42857 */
-@media (min-width: 1025px) {
-  body .splash-screen {
-    zoom: 1.4285714 !important;
-  }
-}
-
-/* No celular e tablet (<=1024px), zoom permanece estritamente 1.0 ocupando 100dvh */
-@media (max-width: 1024px) {
-  body .splash-screen,
-  .splash-screen {
-    zoom: 1 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-  }
+/* Splash screen ocupa 100% do viewport em todos os tamanhos */
+.splash-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
 }
 
 .splash-screen.splash-hide {
