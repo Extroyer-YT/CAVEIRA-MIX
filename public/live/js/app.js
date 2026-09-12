@@ -1612,15 +1612,28 @@ function initStickyObserver() {
   const btnCloseSticky = $("sticky-btn-close");
   const btnScrollTop = $("sticky-scroll-top");
   const btnStickyOsPip = $("sticky-btn-os-pip");
+  const playlistBubble = document.querySelector(".playlist-finder-bubble");
 
   if (!sticky) return;
 
   let stickyDismissed = false;
 
+  const setStickyVisible = (show) => {
+    if (show) {
+      sticky.classList.add("visible");
+      document.body.classList.add("has-sticky-player");
+      if (playlistBubble) playlistBubble.classList.add("with-sticky");
+    } else {
+      sticky.classList.remove("visible");
+      document.body.classList.remove("has-sticky-player");
+      if (playlistBubble) playlistBubble.classList.remove("with-sticky");
+    }
+  };
+
   if (btnCloseSticky) {
     btnCloseSticky.addEventListener("click", () => {
       stickyDismissed = true;
-      sticky.classList.remove("visible");
+      setStickyVisible(false);
     });
   }
 
@@ -1641,9 +1654,9 @@ function initStickyObserver() {
       entries.forEach((en) => {
         if (stickyDismissed) return;
         if (!en.isIntersecting) {
-          sticky.classList.add("visible");
+          setStickyVisible(true);
         } else {
-          sticky.classList.remove("visible");
+          setStickyVisible(false);
         }
       });
     }, { threshold: 0.15 });
@@ -1651,8 +1664,8 @@ function initStickyObserver() {
   } else if (hero) {
     window.addEventListener("scroll", () => {
       if (stickyDismissed) return;
-      if (window.scrollY > 350) sticky.classList.add("visible");
-      else sticky.classList.remove("visible");
+      if (window.scrollY > 350) setStickyVisible(true);
+      else setStickyVisible(false);
     });
   }
 }

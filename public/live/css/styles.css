@@ -1456,9 +1456,15 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 
 /* ============================ FOOTER ============================ */
 .site-footer {
-  text-align: center; padding: 2rem 1.5rem; color: var(--grey); font-size: 0.8rem;
+  text-align: center; padding: 2rem 1.5rem 5.5rem; color: var(--grey); font-size: 0.8rem;
   border-top: 1px solid var(--glass-border); display: flex; flex-direction: column;
   align-items: center; gap: 0.5rem;
+  transition: padding-bottom 0.3s ease;
+}
+
+body.has-sticky-player .site-footer,
+body:has(.sticky-player.visible) .site-footer {
+  padding-bottom: 7rem;
 }
 
 .muted { color: var(--grey); text-align: center; }
@@ -1834,6 +1840,13 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 .playlist-finder-bubble {
   position: fixed; bottom: 30px; right: 30px; z-index: 9999;
   animation: pf-float 3s ease-in-out infinite;
+  transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Quando o sticky player estiver ativo, move o balão para cima para não sobrepor */
+body.has-sticky-player .playlist-finder-bubble,
+body:has(.sticky-player.visible) .playlist-finder-bubble,
+.playlist-finder-bubble.with-sticky {
+  bottom: 88px;
 }
 .bubble-link {
   display: flex; align-items: center; gap: 12px; padding: 14px 20px;
@@ -1850,6 +1863,11 @@ button.share-btn { font-family: inherit; border: 1px solid var(--glass-border); 
 @keyframes pf-float { 0%,100%{transform: translateY(0);} 50%{transform: translateY(-10px);} }
 @media (max-width: 768px) {
   .playlist-finder-bubble { bottom: 18px; right: 18px; }
+  body.has-sticky-player .playlist-finder-bubble,
+  body:has(.sticky-player.visible) .playlist-finder-bubble,
+  .playlist-finder-bubble.with-sticky {
+    bottom: 82px;
+  }
   .bubble-link { padding: 10px 14px; }
   .bubble-subtitle { display: none; }
 }
