@@ -234,6 +234,9 @@
   <div class="bg-layer" aria-hidden="true"></div>
   <canvas id="particles" aria-hidden="true"></canvas>
 
+  <!-- SCALE ROOT: wrapper que aplica escala adaptativa via JS para todos os browsers -->
+  <div id="scale-root">
+
   <!-- Header -->
   <header class="site-header">
     <div class="brand">
@@ -927,6 +930,8 @@
       }
     })();
   </script>
+  </div><!-- /scale-root -->
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script src="/live/js/config.js"></script>
   <script src="/live/js/sponsors.js" defer></script>

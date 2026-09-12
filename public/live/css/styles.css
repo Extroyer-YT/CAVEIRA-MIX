@@ -27,21 +27,16 @@ body {
   background: var(--black);
   color: var(--white);
   min-height: 100vh;
-  overflow-x: clip;
+  overflow-x: hidden;
   position: relative;
 }
 
-/* Trava o zoom em 70% no Computador (Desktop) e mantém 100% no Celular/Tablet */
-@media (min-width: 1025px) {
-  body {
-    zoom: 0.70;
-  }
-}
-
-@media (max-width: 1024px) {
-  body {
-    zoom: 1;
-  }
+/* ============================================================
+   SCALE ROOT — wrapper que garante layout correto em todos os browsers
+   O layout responsivo é feito via flexbox CSS puro
+   ============================================================ */
+#scale-root {
+  width: 100%;
 }
 
 /* --- Fundo dinâmico --- */
@@ -69,38 +64,39 @@ body {
 /* ============================ HEADER ============================ */
 .site-header {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; padding: 1rem 1.5rem; flex-wrap: wrap;
+  gap: 0.6rem; padding: 0.75rem 1.2rem; flex-wrap: nowrap;
   position: sticky; top: 0; z-index: 20;
   background: rgba(10, 10, 10, 0.35);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
 }
-.brand { display: flex; align-items: center; gap: 0.75rem; }
-.brand-logo { filter: drop-shadow(var(--shadow-glow)); animation: float 4s ease-in-out infinite; }
+.brand { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+.brand-logo { filter: drop-shadow(var(--shadow-glow)); animation: float 4s ease-in-out infinite; width: 46px; height: 46px; }
 .brand-text { display: flex; flex-direction: column; }
 .brand-name { font-weight: 800; letter-spacing: 2px; font-size: 1.1rem; }
 .brand-slogan { font-size: 0.72rem; color: var(--grey); letter-spacing: 1px; }
 
 .header-widgets {
   display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
   align-items: center;
+  flex-shrink: 0;
 }
 .widget {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  font-size: 0.8rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 12px;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 10px;
   background: var(--glass);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(14px) saturate(1.3);
   -webkit-backdrop-filter: blur(14px) saturate(1.3);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
   transition: all 0.25s ease;
-  min-height: 48px;
+  min-height: 42px;
 }
 .widget:hover {
   border-color: rgba(255, 45, 63, 0.35);
@@ -109,7 +105,7 @@ body {
 
 .clock-widget {
   align-items: flex-end;
-  min-width: 110px;
+  min-width: 90px;
 }
 .clock {
   font-weight: 700;
@@ -161,20 +157,20 @@ body {
   letter-spacing: 0.3px;
 }
 .weather-city {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--grey);
   font-weight: 600;
   white-space: nowrap;
-  max-width: 120px;
+  max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .weather-cond {
   color: #b0b0b8;
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   text-transform: capitalize;
   white-space: nowrap;
-  max-width: 170px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -220,12 +216,12 @@ body {
 
 .hero-led-right-col {
   position: absolute;
-  right: 2rem;
+  right: 1.5rem;
   left: auto;
   top: 50%;
   transform: translateY(-50%);
-  width: 743px;
-  max-width: calc(50vw - 210px);
+  width: clamp(160px, calc(50vw - 420px), 480px);
+  max-width: calc(50vw - 420px);
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -255,7 +251,7 @@ body {
 }
 .hero-slogan { color: var(--grey); font-size: 1rem; }
 
-@media (max-width: 1180px) {
+@media (max-width: 1300px) {
   .hero-top-grid {
     flex-direction: column;
     align-items: center;
@@ -278,27 +274,26 @@ body {
   }
 }
 
-/* --- Hero Stage (Layout do Player + Patrocinadores) --- */
+/* --- Hero Stage (Layout do Player + Patrocinadores) — FLEXBOX 3 COLUNAS --- */
 .hero-stage {
   position: relative;
   width: 100%;
   margin-top: 1.5rem;
   display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: stretch;
+  gap: 1.2rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 /* ============================================================
-   QUADRO DE PATROCINADORES (CENTRALIZADO ENTRE PLAYER E BORDA ESQUERDA)
+   QUADRO DE PATROCINADORES (COLUNA ESQUERDA DO PLAYER)
    ============================================================ */
 .sponsors-container {
-  width: 480px;
+  flex: 0 0 clamp(220px, 22vw, 310px);
   display: flex;
-  position: absolute;
-  left: calc(25vw - 90px);
-  transform: translateX(-50%);
-  top: 0;
-  bottom: 0;
   min-height: 460px;
   z-index: 10;
 }
@@ -637,16 +632,11 @@ body {
 }
 
 /* ============================================================
-   QUADRO DO EQUALIZADOR & AMPLIFICADOR (LADO DIREITO DO PLAYER)
+   QUADRO DO EQUALIZADOR & AMPLIFICADOR (COLUNA DIREITA DO PLAYER)
    ============================================================ */
 .equalizer-container {
-  width: 480px;
+  flex: 0 0 clamp(220px, 22vw, 310px);
   display: flex;
-  position: absolute;
-  right: calc(25vw - 90px);
-  transform: translateX(50%);
-  top: 0;
-  bottom: 0;
   min-height: 460px;
   z-index: 10;
 }
@@ -1018,9 +1008,10 @@ body {
 
 /* --- Player card --- */
 .player-card {
-  margin: 0 auto;
+  margin: 0;
   padding: 2rem;
-  width: min(760px, 94vw);
+  flex: 1 1 400px;
+  max-width: 760px;
   display: flex;
   gap: 2rem;
   align-items: center;
@@ -1031,33 +1022,32 @@ body {
   z-index: 5;
 }
 
-@media (max-width: 1440px) {
+/* Colapsa para coluna única em telas menores que 900px */
+@media (max-width: 900px) {
   .hero-stage {
     flex-direction: column;
     align-items: center;
     width: 100%;
     gap: 1.5rem;
+    padding: 0;
   }
 
   .sponsors-container {
-    position: static;
-    left: auto;
-    transform: none;
+    flex: none;
     width: min(760px, 94vw);
     height: auto;
     margin-bottom: 0.5rem;
   }
 
   .equalizer-container {
-    position: static;
-    right: auto;
-    transform: none;
+    flex: none;
     width: min(760px, 94vw);
     height: auto;
     margin-top: 0.5rem;
   }
 
   .player-card {
+    flex: none;
     width: min(760px, 94vw);
     margin: 0 auto;
   }
@@ -1891,9 +1881,9 @@ body:has(.sticky-player.visible) .playlist-finder-bubble,
 .nav-list::-webkit-scrollbar { display: none; }
 .nav-list > li + li { border-left: 1px solid rgba(255, 255, 255, 0.1); }
 .nav-link {
-  display: flex; align-items: center; gap: 0.55rem;
+  display: flex; align-items: center; gap: 0.35rem;
   white-space: nowrap; text-decoration: none; color: var(--white);
-  font-size: 0.9rem; letter-spacing: 0.2px; padding: 0.4rem 1.1rem;
+  font-size: 0.78rem; letter-spacing: 0.1px; padding: 0.35rem 0.7rem;
   border-radius: 999px; border: 1px solid transparent; transition: all 0.25s ease;
 }
 .nav-ico { width: 18px; height: 18px; color: var(--red); flex: 0 0 auto; transition: all 0.25s ease; }
@@ -5010,22 +5000,11 @@ body { overflow-x: clip; }
   user-select: none;
 }
 
-/* No desktop (>1024px), o body tem zoom: 0.70, então compensamos exatamente com 1.42857 */
-@media (min-width: 1025px) {
-  body .splash-screen {
-    zoom: 1.4285714 !important;
-  }
-}
-
-/* No celular e tablet (<=1024px), zoom permanece estritamente 1.0 ocupando 100dvh */
-@media (max-width: 1024px) {
-  body .splash-screen,
-  .splash-screen {
-    zoom: 1 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-  }
+/* Splash screen ocupa 100% do viewport em todos os tamanhos */
+.splash-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
 }
 
 .splash-screen.splash-hide {
