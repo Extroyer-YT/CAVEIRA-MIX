@@ -1871,14 +1871,50 @@ body:has(.sticky-player.visible) .playlist-finder-bubble,
 }
 .nav-list {
   display: flex; align-items: center; gap: 0;
-  list-style: none; margin: 0; padding: 0.35rem 0.9rem; max-width: 100%;
-  overflow-x: auto; scrollbar-width: none;
+  list-style: none; margin: 0; padding: 0.35rem 0.9rem 0.45rem 0.9rem; max-width: 100%;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #ff2d3f rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, #121214 0%, #08080a 100%);
   border: 1px solid rgba(229, 9, 20, 0.75);
   border-radius: 999px;
   box-shadow: 0 0 14px rgba(229, 9, 20, 0.35), inset 0 0 12px rgba(229, 9, 20, 0.12);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  cursor: grab;
 }
-.nav-list::-webkit-scrollbar { display: none; }
+.nav-list.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+  scroll-behavior: auto;
+}
+.nav-list.is-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+.nav-list::-webkit-scrollbar {
+  height: 5px;
+  display: block;
+}
+.nav-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  margin: 0 18px 2px 18px;
+}
+.nav-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #ff0040, #ff2d3f);
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(255, 45, 63, 0.7);
+  cursor: grab;
+}
+.nav-list::-webkit-scrollbar-thumb:hover {
+  background: #ff5262;
+  box-shadow: 0 0 12px rgba(255, 45, 63, 0.9);
+}
+.nav-list::-webkit-scrollbar-thumb:active {
+  cursor: grabbing;
+}
 .nav-list > li + li { border-left: 1px solid rgba(255, 255, 255, 0.1); }
 .nav-link {
   display: flex; align-items: center; gap: 0.35rem;
@@ -1902,10 +1938,11 @@ body:has(.sticky-player.visible) .playlist-finder-bubble,
     flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.5rem;
     background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(12px);
     border: 1px solid rgba(229, 9, 20, 0.6); border-radius: 18px; min-width: 230px;
+    cursor: default; overflow-y: auto; overflow-x: hidden;
   }
+  .nav-list::-webkit-scrollbar { display: none; }
   .nav-list > li + li { border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.08); }
   .header-nav.open .nav-list { display: flex; }
-
 }
 
 /* ---- Bandas disponíveis (accordion) ---- */

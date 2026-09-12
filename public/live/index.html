@@ -928,6 +928,57 @@
         }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
         sections.forEach(function (s) { if (s) io.observe(s); });
       }
+
+      // Suporte a clicar e arrastar (drag to scroll) e rolar com a roda do mouse
+      if (list) {
+        var isDown = false;
+        var startX = 0;
+        var scrollLeft = 0;
+        var hasDragged = false;
+
+        list.addEventListener('mousedown', function (e) {
+          if (e.button !== 0) return;
+          isDown = true;
+          hasDragged = false;
+          startX = e.pageX - list.offsetLeft;
+          scrollLeft = list.scrollLeft;
+        });
+
+        window.addEventListener('mouseup', function () {
+          if (!isDown) return;
+          isDown = false;
+          list.classList.remove('is-dragging');
+          setTimeout(function () { hasDragged = false; }, 80);
+        });
+
+        list.addEventListener('mousemove', function (e) {
+          if (!isDown) return;
+          var x = e.pageX - list.offsetLeft;
+          var walk = (x - startX);
+          if (Math.abs(walk) > 4) {
+            hasDragged = true;
+            list.classList.add('is-dragging');
+            e.preventDefault();
+            list.scrollLeft = scrollLeft - walk;
+          }
+        });
+
+        list.addEventListener('click', function (e) {
+          if (hasDragged) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+
+        list.addEventListener('wheel', function (e) {
+          if (list.scrollWidth > list.clientWidth) {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+              e.preventDefault();
+              list.scrollLeft += e.deltaY;
+            }
+          }
+        }, { passive: false });
+      }
     })();
   </script>
   </div><!-- /scale-root -->
