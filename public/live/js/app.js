@@ -232,8 +232,8 @@ function updatePlayButtonUI() {
 function play() {
   lsmRetries = 0;
   lsmReconnecting = false;
-  // No celular: se o áudio estiver pausado (ou sem src), recarrega o stream para conectar na transmissão ao vivo
-  if (!audio.src || audio.src === window.location.href || (isMobileDevice() && audio.paused)) {
+  // Se o áudio estiver pausado (ou sem src), recarrega o stream para conectar na transmissão ao vivo
+  if (!audio.src || audio.src === window.location.href || audio.paused) {
     lsmLoadSource();
   }
   audio.play().then(() => {
@@ -244,8 +244,8 @@ function play() {
     lsmSetStatus("");
     lsmStartLagWatcher();
     vmu.ensureInit(audio);
-    // Sincroniza o PiP no celular
-    if (isMobileDevice() && osPipVideo && osPipVideo.paused && document.pictureInPictureElement === osPipVideo) {
+    // Sincroniza o PiP (PC e celular)
+    if (osPipVideo && osPipVideo.paused && document.pictureInPictureElement === osPipVideo) {
       osPipVideo.play().catch(() => {});
     }
     if (typeof updateMediaSessionPlaybackState === "function") updateMediaSessionPlaybackState();
@@ -264,8 +264,8 @@ function pause() {
   equalizer.classList.remove("active");
   lsmStopLagWatcher();
   lsmClearStallTimer();
-  // Sincroniza o PiP no celular
-  if (isMobileDevice() && osPipVideo && !osPipVideo.paused && document.pictureInPictureElement === osPipVideo) {
+  // Sincroniza o PiP (PC e celular)
+  if (osPipVideo && !osPipVideo.paused && document.pictureInPictureElement === osPipVideo) {
     osPipVideo.pause();
   }
   if (typeof updateMediaSessionPlaybackState === "function") updateMediaSessionPlaybackState();
@@ -1828,48 +1828,47 @@ function setupOsPip() {
     console.warn("Canvas captureStream não suportado:", e);
   }
 
-  // No celular: adiciona faixa de áudio inaudível e desmuta com volume mínimo,
-  // impedindo que o Android/Chrome congele o PiP em segundo plano como vídeo mudo descartável
-  if (isMobileDevice()) {
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) {
-        const silentCtx = new AC();
-        const dest = silentCtx.createMediaStreamDestination();
-        const osc = silentCtx.createOscillator();
-        const gain = silentCtx.createGain();
-        gain.gain.value = 0.0001; // silêncio absoluto inaudível
-        osc.connect(gain);
-        gain.connect(dest);
-        osc.start();
-        const [silentTrack] = dest.stream.getAudioTracks();
-        if (silentTrack && osPipStream && typeof osPipStream.addTrack === "function") {
-          osPipStream.addTrack(silentTrack);
-          osPipVideo.muted = false;
-          osPipVideo.volume = 0.01;
-        }
+  // Adiciona faixa de áudio inaudível e volume mínimo (PC e Celular),
+  // habilitando os controles de Play/Pause nativos no PiP do navegador (Chrome, Edge, Windows)
+  // e impedindo que o Android/Chrome congele o PiP em segundo plano
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) {
+      const silentCtx = new AC();
+      const dest = silentCtx.createMediaStreamDestination();
+      const osc = silentCtx.createOscillator();
+      const gain = silentCtx.createGain();
+      gain.gain.value = 0.0001; // silêncio absoluto inaudível
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start();
+      const [silentTrack] = dest.stream.getAudioTracks();
+      if (silentTrack && osPipStream && typeof osPipStream.addTrack === "function") {
+        osPipStream.addTrack(silentTrack);
+        osPipVideo.muted = false;
+        osPipVideo.volume = 0.01;
       }
-    } catch (_) {}
+    }
+  } catch (_) {}
 
-    // Sincronização dos controles nativos do PiP flutuante no celular
-    osPipVideo.addEventListener("play", () => {
-      if (!isPlaying) {
-        play();
-      }
-    });
-    osPipVideo.addEventListener("pause", () => {
-      // Ignora se o pause foi disparo involuntário pelo browser durante a transição para segundo plano
-      if (document.visibilityState === "hidden" && (Date.now() - lastVisibilityChangeTs < 350)) {
-        if (isPlaying) {
-          osPipVideo.play().catch(() => {});
-        }
-        return;
-      }
+  // Sincronização dos controles nativos de Play / Pause do Mini Player PiP (PC e Celular)
+  osPipVideo.addEventListener("play", () => {
+    if (!isPlaying) {
+      play();
+    }
+  });
+  osPipVideo.addEventListener("pause", () => {
+    // No celular: ignora se o pause foi disparo involuntário pelo browser durante a transição para segundo plano
+    if (isMobileDevice() && document.visibilityState === "hidden" && (Date.now() - lastVisibilityChangeTs < 350)) {
       if (isPlaying) {
-        pause();
+        osPipVideo.play().catch(() => {});
       }
-    });
-  }
+      return;
+    }
+    if (isPlaying) {
+      pause();
+    }
+  });
 
   // Se a capa da música atual já estiver no player, aproveita
   if (discCover && discCover.src && !discCover.src.includes("logo.png")) {
@@ -2166,13 +2165,20 @@ function drawPipCover(x, y, s) {
   osPipCtx.stroke();
 }
 
-// MediaSession API: integra com controles nativos de mídia do Windows/SO
+// MediaSession API: integra com controles nativos de mídia do Windows/SO e do PiP
 function setupMediaSession() {
   if (!("mediaSession" in navigator)) return;
   try {
-    navigator.mediaSession.setActionHandler("play", () => play());
-    navigator.mediaSession.setActionHandler("pause", () => pause());
-    navigator.mediaSession.setActionHandler("stop", () => pause());
+    navigator.mediaSession.setActionHandler("play", () => {
+      if (!isPlaying) play();
+    });
+    navigator.mediaSession.setActionHandler("pause", () => {
+      if (isPlaying) pause();
+    });
+    navigator.mediaSession.setActionHandler("stop", () => {
+      if (isPlaying) pause();
+    });
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
   } catch (_) {}
 }
 
@@ -2245,10 +2251,18 @@ async function toggleOsPictureInPicture() {
     }
 
     updateOsPipCanvas();
-    await osPipVideo.play();
+    if (isPlaying) {
+      await osPipVideo.play();
+    } else {
+      try {
+        await osPipVideo.play();
+        osPipVideo.pause();
+      } catch (_) {}
+    }
     await osPipVideo.requestPictureInPicture();
     startOsPipLoop();
     updateBtnState(true);
+    setupMediaSession();
 
     if (window.showToast) {
       window.showToast("🖥️ Mini Player flutuando sobre a Área de Trabalho e outros programas!", "success");
@@ -2267,6 +2281,7 @@ async function toggleOsPictureInPicture() {
 $("year").textContent = new Date().getFullYear();
 setupShare();
 initParticles();
+setupMediaSession();    // integra com teclas de mídia do PC/Windows
 setupOsPip();          // inicializa o canvas/vídeo do PiP antes dos botões
 initMainPipButton();   // conecta o botão Mini Player → PiP nativo do SO
 initStickyObserver();  // sticky player do rodapé
