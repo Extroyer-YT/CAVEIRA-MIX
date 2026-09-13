@@ -8,6 +8,7 @@
 
   // Elementos do DOM
   let elCommentsList = null;
+  let elPaginationWrap = null;
   let elCommentForm = null;
   let elCommentInput = null;
   let elCharCount = null;
@@ -17,6 +18,10 @@
   let elAuthModal = null;
   let elAuthFormLogin = null;
   let elAuthFormRegister = null;
+
+  // Paginação dos Comentários (5 por página)
+  const COMMENTS_PER_PAGE = 5;
+  let currentPage = 1;
 
   // Estado do Módulo
   let supabaseClient = null;
@@ -360,7 +365,7 @@
         .select("*")
         .eq("aprovado", true)
         .order("created_at", { ascending: false })
-        .limit(60);
+        .limit(150);
 
       if (error) throw error;
 
@@ -378,7 +383,7 @@
     }
   }
 
-  // Renderiza comentários padrão caso o banco esteja vazio ou em caso de erro
+  // Renderiza comentários padrão caso o banco esteja vazio ou em caso de erro (12 itens para testar paginação)
   function renderFallbackComments() {
     commentsData = [
       {
@@ -387,8 +392,8 @@
         avatar_url: "💀",
         mensagem: "Salve galera da Rádio Caveira! Essa rádio é pedrada pura, sintonizado aqui de Curitiba! 🤘🔥",
         rock_badge: "🤘 Headbanger",
-        likes_count: 5,
-        created_at: new Date(Date.now() - 45 * 60000).toISOString(),
+        likes_count: 15,
+        created_at: new Date(Date.now() - 10 * 60000).toISOString(),
       },
       {
         id: "def-2",
@@ -406,7 +411,88 @@
         mensagem: "Aumenta o volume que hoje é dia de muito Heavy Metal e Underground!",
         rock_badge: "🎸 Guitar Hero",
         likes_count: 12,
-        created_at: new Date(Date.now() - 10 * 60000).toISOString(),
+        created_at: new Date(Date.now() - 40 * 60000).toISOString(),
+      },
+      {
+        id: "def-4",
+        nome: "Lucas Thrasher",
+        avatar_url: "🔥",
+        mensagem: "Manda um salve pro pessoal do ABC paulista! Solta Iron Maiden ou Metallica que hoje é pedrada garantida!",
+        rock_badge: "🤘 Headbanger",
+        likes_count: 6,
+        created_at: new Date(Date.now() - 60 * 60000).toISOString(),
+      },
+      {
+        id: "def-5",
+        nome: "Rockeira Noturna",
+        avatar_url: "🖤",
+        mensagem: "Essa playlist na madrugada tá insana! Não consigo desligar o player de jeito nenhum 💀🖤",
+        rock_badge: "🔥 Fã VIP",
+        likes_count: 11,
+        created_at: new Date(Date.now() - 85 * 60000).toISOString(),
+      },
+      {
+        id: "def-6",
+        nome: "Valter Cordeiro",
+        avatar_url: "💀",
+        mensagem: "Rádio Caveira no talo aqui no churrasco com a galera! Só clássicos de primeira qualidade!",
+        rock_badge: "👑 VIP Ouro",
+        likes_count: 19,
+        created_at: new Date(Date.now() - 110 * 60000).toISOString(),
+      },
+      {
+        id: "def-7",
+        nome: "Bruno Bass",
+        avatar_url: "🎸",
+        mensagem: "A linha de baixo nessa última faixa foi brutal. Viva o Rock Nacional e Internacional!",
+        rock_badge: "🎸 Guitar Hero",
+        likes_count: 7,
+        created_at: new Date(Date.now() - 150 * 60000).toISOString(),
+      },
+      {
+        id: "def-8",
+        nome: "Ana Black",
+        avatar_url: "🦇",
+        mensagem: "Sempre sintonizada enquanto trabalho no home office. O foco vem dobrado ao som de puro Heavy Metal! ⚡🎸",
+        rock_badge: "🤘 Headbanger",
+        likes_count: 14,
+        created_at: new Date(Date.now() - 200 * 60000).toISOString(),
+      },
+      {
+        id: "def-9",
+        nome: "Carlos Motorhead",
+        avatar_url: "♠️",
+        mensagem: "Vida longa à Rádio Caveira! Lembrança eterna do Lemmy Kilmister! Ace of Spades sempre!",
+        rock_badge: "🔥 Fã VIP",
+        likes_count: 22,
+        created_at: new Date(Date.now() - 320 * 60000).toISOString(),
+      },
+      {
+        id: "def-10",
+        nome: "Fernanda Grunge",
+        avatar_url: "🖤",
+        mensagem: "Alice in Chains e Soundgarden na sequência foi de arrepiar! Programação nota 10!",
+        rock_badge: "🤘 Headbanger",
+        likes_count: 9,
+        created_at: new Date(Date.now() - 400 * 60000).toISOString(),
+      },
+      {
+        id: "def-11",
+        nome: "Rodrigo Solo",
+        avatar_url: "⚡",
+        mensagem: "Melhor qualidade de áudio e streaming que já vi numa rádio web. Parabéns aos criadores!",
+        rock_badge: "🎸 Guitar Hero",
+        likes_count: 16,
+        created_at: new Date(Date.now() - 500 * 60000).toISOString(),
+      },
+      {
+        id: "def-12",
+        nome: "Igor Sepultura",
+        avatar_url: "💀",
+        mensagem: "Reflecting the past! Solta Roots Bloody Roots ou Arise! Caveira Mix arregaçando tudo!",
+        rock_badge: "🤘 Headbanger",
+        likes_count: 25,
+        created_at: new Date(Date.now() - 650 * 60000).toISOString(),
       },
     ];
     renderComments();
@@ -450,7 +536,7 @@
     }
   }
 
-  // 8. Renderiza a lista de comentários no DOM (com suporte a threads / respostas)
+  // 8. Renderiza a lista de comentários no DOM (com suporte a threads e paginação de 5 comentários)
   function renderComments() {
     if (!elCommentsList) return;
 
@@ -466,6 +552,10 @@
           <p>Escreva sua mensagem acima e agite o mural dos Headbangers.</p>
         </div>
       `;
+      if (elPaginationWrap) {
+        elPaginationWrap.style.display = "none";
+        elPaginationWrap.innerHTML = "";
+      }
       return;
     }
 
@@ -483,6 +573,17 @@
         rootComments.push(item);
       }
     });
+
+    const totalPages = Math.max(1, Math.ceil(rootComments.length / COMMENTS_PER_PAGE));
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+      currentPage = 1;
+    }
+
+    const startIndex = (currentPage - 1) * COMMENTS_PER_PAGE;
+    const pagedRoots = rootComments.slice(startIndex, startIndex + COMMENTS_PER_PAGE);
 
     // Função interna para gerar HTML de um card de comentário ou resposta
     function createCommentCardHtml(item, isReply = false, isFirst = false) {
@@ -532,7 +633,7 @@
       `;
     }
 
-    const html = rootComments.map((item, index) => createCommentCardHtml(item, false, index === 0)).join("");
+    const html = pagedRoots.map((item, index) => createCommentCardHtml(item, false, index === 0 && currentPage === 1)).join("");
 
     elCommentsList.innerHTML = html;
 
@@ -552,6 +653,86 @@
         const id = btn.getAttribute("data-id");
         const comment = commentsData.find((c) => String(c.id) === String(id));
         if (comment) setReplyTarget(comment);
+      });
+    });
+
+    // Renderiza a paginação
+    renderPagination(totalPages, currentPage);
+  }
+
+  // 8.1 Renderiza os botões de navegação de páginas ([ 1 ] [ 2 ] [ 3 ] [ 4 ] [ 5 ] [ Próxima » ])
+  function renderPagination(totalPages, page) {
+    if (!elPaginationWrap) return;
+
+    if (totalPages <= 1) {
+      elPaginationWrap.style.display = "none";
+      elPaginationWrap.innerHTML = "";
+      return;
+    }
+
+    elPaginationWrap.style.display = "flex";
+
+    let html = "";
+
+    // Botão Anterior
+    if (page > 1) {
+      html += `<button type="button" class="pagination-btn pagination-prev" data-page="${page - 1}" title="Página anterior">« Anterior</button>`;
+    }
+
+    // Janela de páginas (exibe até 5 botões de número por vez)
+    const maxButtons = 5;
+    let startPage = 1;
+    let endPage = totalPages;
+
+    if (totalPages > maxButtons) {
+      startPage = Math.max(1, page - 2);
+      endPage = startPage + maxButtons - 1;
+      if (endPage > totalPages) {
+        endPage = totalPages;
+        startPage = Math.max(1, endPage - maxButtons + 1);
+      }
+    }
+
+    if (startPage > 1) {
+      html += `<button type="button" class="pagination-btn" data-page="1">1</button>`;
+      if (startPage > 2) {
+        html += `<span class="pagination-ellipsis">...</span>`;
+      }
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+      const isActive = p === page;
+      html += `<button type="button" class="pagination-btn ${isActive ? 'active' : ''}" data-page="${p}" ${isActive ? 'aria-current="page"' : ''}>${p}</button>`;
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        html += `<span class="pagination-ellipsis">...</span>`;
+      }
+      html += `<button type="button" class="pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    // Botão Próxima
+    if (page < totalPages) {
+      html += `<button type="button" class="pagination-btn pagination-next" data-page="${page + 1}" title="Próxima página">Próxima »</button>`;
+    }
+
+    elPaginationWrap.innerHTML = html;
+
+    // Conecta eventos de clique em cada botão de página
+    elPaginationWrap.querySelectorAll(".pagination-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const targetPage = parseInt(btn.getAttribute("data-page"), 10);
+        if (targetPage && targetPage !== currentPage) {
+          currentPage = targetPage;
+          renderComments();
+
+          const targetEl = document.querySelector(".feed-header-bar") || document.getElementById("comentarios");
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
       });
     });
   }
@@ -600,6 +781,7 @@
       // Fallback local se não houver Supabase configurado
       newCommentObj.id = "local-" + Date.now();
       commentsData.unshift(newCommentObj);
+      currentPage = 1;
       renderComments();
       if (elCommentInput) elCommentInput.value = "";
       updateCharCount();
@@ -668,6 +850,7 @@
         const exists = commentsData.some((c) => c.id === data[0].id);
         if (!exists) {
           commentsData.unshift(data[0]);
+          currentPage = 1;
           renderComments();
         }
       }
@@ -845,6 +1028,7 @@
   // 13. Inicialização Principal do Módulo
   function init() {
     elCommentsList = document.getElementById("comments-feed-list");
+    elPaginationWrap = document.getElementById("comments-pagination");
     elCommentForm = document.getElementById("comment-form");
     elCommentInput = document.getElementById("comment-input");
     elCharCount = document.getElementById("comment-char-count");

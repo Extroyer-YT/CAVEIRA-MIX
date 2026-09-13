@@ -4036,6 +4036,93 @@ body { overflow-x: clip; }
 }
 
 /* ============================================================
+   PAGINAÇÃO DO MURAL DE COMENTÁRIOS (5 POR PÁGINA)
+   ============================================================ */
+.comments-pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 1.8rem;
+  padding: 0.8rem 0 0.4rem;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  background: rgba(18, 18, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #c8c8d6;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  user-select: none;
+  font-family: inherit;
+}
+
+.pagination-btn:hover:not(.active) {
+  background: rgba(35, 35, 48, 0.95);
+  border-color: rgba(229, 9, 20, 0.6);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+}
+
+.pagination-btn:active:not(.active) {
+  transform: translateY(0);
+}
+
+.pagination-btn.active {
+  background: #e50914;
+  border-color: #e50914;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.6), 0 2px 8px rgba(0, 0, 0, 0.45);
+  cursor: default;
+}
+
+.pagination-btn.pagination-next,
+.pagination-btn.pagination-prev {
+  padding: 0 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  gap: 4px;
+}
+
+.pagination-ellipsis {
+  color: #777788;
+  font-weight: 700;
+  padding: 0 4px;
+  user-select: none;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 520px) {
+  .comments-pagination-wrap {
+    gap: 6px;
+  }
+  .pagination-btn {
+    min-width: 35px;
+    height: 35px;
+    padding: 0 9px;
+    font-size: 0.84rem;
+    border-radius: 6px;
+  }
+  .pagination-btn.pagination-next,
+  .pagination-btn.pagination-prev {
+    padding: 0 11px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================================
    MODAL DE AUTENTICAÇÃO (LOGIN & CADASTRO SUPABASE)
    ============================================================ */
 .auth-modal-backdrop {
