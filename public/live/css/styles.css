@@ -2001,6 +2001,9 @@ body:has(.sticky-player.visible) .playlist-finder-bubble,
     order: 3;
     flex: 1 1 100%;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
     margin-top: 0.2rem;
     min-width: 0;
@@ -2010,66 +2013,71 @@ body:has(.sticky-player.visible) .playlist-finder-bubble,
     display: none !important;
   }
 
-  /* Sinalização de arrastar para o lado no celular */
+  /* Sinalização de arrastar para o lado no celular (posicionada ACIMA da barra de opções) */
   .nav-scroll-hint {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: linear-gradient(135deg, rgba(229, 9, 20, 0.95) 0%, rgba(139, 0, 0, 0.98) 100%);
-    color: #ffffff;
-    font-size: 0.65rem;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-bottom: 0.28rem;
+    background: linear-gradient(135deg, rgba(229, 9, 20, 0.22) 0%, rgba(20, 20, 24, 0.92) 100%);
+    color: #ffb3b8;
+    font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.3px;
-    padding: 0.22rem 0.55rem 0.22rem 0.45rem;
+    padding: 0.22rem 0.65rem 0.22rem 0.55rem;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    box-shadow: 0 0 14px rgba(229, 9, 20, 0.75), 0 2px 6px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(229, 9, 20, 0.5);
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.35);
     pointer-events: none;
     z-index: 5;
     animation: navHintPulse 2s ease-in-out infinite;
-    transition: opacity 0.35s ease, transform 0.35s ease;
+    transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, margin 0.35s ease;
     white-space: nowrap;
     user-select: none;
   }
   .nav-scroll-hint.faded {
     opacity: 0;
-    transform: translateY(-50%) translateX(10px) scale(0.85);
+    transform: translateY(-4px) scale(0.92);
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border: none;
+    overflow: hidden;
     pointer-events: none;
   }
   .nav-hint-icon {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     line-height: 1;
   }
   .nav-hint-text {
-    font-size: 0.64rem;
+    font-size: 0.66rem;
     line-height: 1;
+    color: #fce8e8;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   }
   .nav-hint-arrow {
-    font-size: 0.74rem;
+    font-size: 0.78rem;
     font-weight: 900;
-    color: #ffe6e8;
+    color: #ff2d3f;
     animation: navHintArrowBounce 0.9s infinite alternate ease-in-out;
   }
 
   @keyframes navHintPulse {
     0%, 100% {
-      box-shadow: 0 0 10px rgba(229, 9, 20, 0.5), 0 2px 6px rgba(0, 0, 0, 0.6);
-      transform: translateY(-50%) translateX(0);
+      border-color: rgba(229, 9, 20, 0.4);
+      box-shadow: 0 0 8px rgba(229, 9, 20, 0.3);
     }
     50% {
-      box-shadow: 0 0 18px rgba(255, 45, 63, 0.95), 0 2px 8px rgba(0, 0, 0, 0.8);
-      transform: translateY(-50%) translateX(-3px);
+      border-color: rgba(255, 45, 63, 0.8);
+      box-shadow: 0 0 16px rgba(255, 45, 63, 0.6);
     }
   }
 
   @keyframes navHintArrowBounce {
     0% { transform: translateX(0); }
-    100% { transform: translateX(3px); }
+    100% { transform: translateX(4px); }
   }
 
   .nav-list {
