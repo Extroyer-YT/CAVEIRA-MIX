@@ -1474,8 +1474,6 @@ body:has(.sticky-player.visible) .site-footer {
   .player-info { text-align: center; }
   .controls { justify-content: center; }
   .equalizer { justify-content: center; }
-  .site-header { justify-content: center; }
-  .header-widgets { justify-content: center; width: 100%; }
 }
 
 /* ===================== VMU (Visual Music Unit) ===================== */
@@ -1928,21 +1926,177 @@ body:has(.sticky-player.visible) .playlist-finder-bubble,
 .nav-link.active { color: var(--red-glow); background: rgba(229, 9, 20, 0.16); box-shadow: inset 0 0 12px rgba(229, 9, 20, 0.25); }
 .nav-link.active .nav-ico { color: var(--red-glow); filter: drop-shadow(0 0 6px rgba(255, 45, 63, 0.9)); }
 
-#pedidos, #historico, #compartilhar { scroll-margin-top: 96px; }
+#pedidos, #historico, #compartilhar, #comentarios { scroll-margin-top: 104px; }
 
+/* ==================== RESPONSIVIDADE DO HEADER E MENU DE NAVEGAÇÃO ==================== */
 @media (max-width: 900px) {
-  .header-nav { flex: 1 1 100%; order: 3; justify-content: flex-start; position: relative; }
-  .nav-toggle { display: block; }
-  .nav-list {
-    display: none; position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
-    flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.5rem;
-    background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(12px);
-    border: 1px solid rgba(229, 9, 20, 0.6); border-radius: 18px; min-width: 230px;
-    cursor: default; overflow-y: auto; overflow-x: hidden;
+  .site-header {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.8rem;
+    gap: 0.4rem 0.5rem;
   }
-  .nav-list::-webkit-scrollbar { display: none; }
-  .nav-list > li + li { border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.08); }
-  .header-nav.open .nav-list { display: flex; }
+
+  .brand {
+    order: 1;
+    flex: 0 1 auto;
+    gap: 0.5rem;
+  }
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+  }
+  .brand-name {
+    font-size: 0.98rem;
+    letter-spacing: 1.5px;
+  }
+  .brand-slogan {
+    font-size: 0.66rem;
+  }
+
+  .header-widgets {
+    order: 2;
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    width: auto;
+  }
+  .widget {
+    padding: 0.25rem 0.5rem;
+    min-height: 38px;
+    font-size: 0.72rem;
+  }
+  .weather-widget {
+    gap: 0.45rem;
+  }
+  .weather-icon {
+    font-size: 1.25rem;
+  }
+  .weather-temp {
+    font-size: 0.88rem;
+  }
+  .weather-city {
+    max-width: 80px;
+    font-size: 0.65rem;
+  }
+  .weather-cond {
+    max-width: 95px;
+    font-size: 0.6rem;
+  }
+  .clock-widget {
+    min-width: unset;
+    padding: 0.25rem 0.55rem;
+  }
+  .clock {
+    font-size: 0.82rem;
+  }
+  .date, .greeting {
+    font-size: 0.62rem;
+  }
+
+  /* BARRA DE OPÇÕES / MENU SEMPRE VISÍVEL E COM ROLAGEM HORIZONTAL SUAVE */
+  .header-nav {
+    order: 3;
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.2rem;
+    min-width: 0;
+  }
+  .nav-toggle {
+    display: none !important;
+  }
+  .nav-list {
+    display: flex !important;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.32rem 0.6rem 0.42rem 0.6rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #121214 0%, #08080a 100%);
+    border: 1px solid rgba(229, 9, 20, 0.75);
+    box-shadow: 0 0 14px rgba(229, 9, 20, 0.35), inset 0 0 12px rgba(229, 9, 20, 0.12);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #ff2d3f rgba(255, 255, 255, 0.08);
+  }
+  .nav-list::-webkit-scrollbar {
+    height: 4px;
+    display: block;
+  }
+  .nav-list > li + li {
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+  }
+  .nav-link {
+    font-size: 0.75rem;
+    padding: 0.32rem 0.62rem;
+    white-space: nowrap;
+    gap: 0.3rem;
+  }
+  .nav-ico {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-header {
+    padding: 0.45rem 0.55rem;
+    gap: 0.3rem 0.4rem;
+  }
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+  }
+  .brand-name {
+    font-size: 0.92rem;
+    letter-spacing: 1px;
+  }
+  .brand-slogan {
+    display: none; /* Deixa apenas "RÁDIO CAVEIRA" para encaixar com folga no mobile */
+  }
+  .weather-cond {
+    display: none; /* Remove detalhe secundário mantendo "29°C Bayeux" limpo no topo */
+  }
+  .clock-widget .greeting {
+    display: none; /* Remove "Bom dia/Olá" mantendo hora e data */
+  }
+  .weather-widget {
+    padding: 0.2rem 0.45rem;
+    min-height: 36px;
+  }
+  .clock-widget {
+    padding: 0.2rem 0.45rem;
+    min-height: 36px;
+  }
+  .clock {
+    font-size: 0.8rem;
+  }
+  .header-nav {
+    margin-top: 0.15rem;
+  }
+  .nav-list {
+    padding: 0.28rem 0.45rem 0.38rem 0.45rem;
+  }
+  .nav-link {
+    font-size: 0.73rem;
+    padding: 0.28rem 0.52rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .clock-widget .date {
+    display: none; /* Mantém apenas a hora no relógio para celulares com tela ultraestreita */
+  }
+  .weather-city {
+    max-width: 60px;
+  }
 }
 
 /* ---- Bandas disponíveis (accordion) ---- */
