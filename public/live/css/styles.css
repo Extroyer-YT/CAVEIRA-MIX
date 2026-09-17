@@ -5471,5 +5471,301 @@ body { overflow-x: clip; }
   }
 }
 
+/* ============================================================
+   ADAPTIVE LOADING — PERFIS DE DESEMPENHO (POTENTE, MÉDIO, FRACO)
+   ============================================================ */
+
+/* --- 1. MODO FRACO / "MODO LITE" (Dispositivos limitados, economia de bateria/dados) --- */
+html.perf-fraco #particles,
+body.perf-fraco #particles {
+  display: none !important;
+}
+
+html.perf-fraco .vmu-container,
+body.perf-fraco .vmu-container {
+  display: none !important;
+}
+
+/* Remove blur excessivo e caro na GPU (substitui por fundo sólido suave) */
+html.perf-fraco .glass,
+body.perf-fraco .glass,
+html.perf-fraco .site-header,
+body.perf-fraco .site-header,
+html.perf-fraco .player-card,
+body.perf-fraco .player-card,
+html.perf-fraco .widget,
+body.perf-fraco .widget,
+html.perf-fraco .bands-accordion,
+body.perf-fraco .bands-accordion,
+html.perf-fraco .playlist-finder-bubble,
+body.perf-fraco .playlist-finder-bubble,
+html.perf-fraco .modal-card,
+body.perf-fraco .modal-card,
+html.perf-fraco .equalizer,
+body.perf-fraco .equalizer,
+html.perf-fraco .controls,
+body.perf-fraco .controls,
+html.perf-fraco .nav-list,
+body.perf-fraco .nav-list {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: rgba(14, 14, 18, 0.96) !important;
+}
+
+/* Remove sombras e brilhos neon excessivos */
+html.perf-fraco *,
+body.perf-fraco * {
+  text-shadow: none !important;
+}
+
+html.perf-fraco .glass,
+body.perf-fraco .glass,
+html.perf-fraco .player-card,
+body.perf-fraco .player-card,
+html.perf-fraco .widget,
+body.perf-fraco .widget,
+html.perf-fraco .nav-list,
+body.perf-fraco .nav-list,
+html.perf-fraco .btn-primary,
+body.perf-fraco .btn-primary,
+html.perf-fraco .btn-play,
+body.perf-fraco .btn-play {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Reduz ou desativa animações contínuas da UI */
+html.perf-fraco .brand-logo,
+body.perf-fraco .brand-logo,
+html.perf-fraco .weather-icon,
+body.perf-fraco .weather-icon,
+html.perf-fraco .pulse-dot,
+body.perf-fraco .pulse-dot {
+  animation: none !important;
+}
+
+html.perf-fraco .disc.playing,
+body.perf-fraco .disc.playing {
+  animation-duration: 20s !important;
+}
+
+/* --- 2. MODO MÉDIO (Equilibrado: visual bonito com consumo controlado) --- */
+html.perf-medio .glass,
+body.perf-medio .glass,
+html.perf-medio .site-header,
+body.perf-medio .site-header,
+html.perf-medio .player-card,
+body.perf-medio .player-card,
+html.perf-medio .widget,
+body.perf-medio .widget {
+  backdrop-filter: blur(6px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(1.2) !important;
+}
+
+html.perf-medio .nav-list,
+body.perf-medio .nav-list {
+  box-shadow: 0 0 8px rgba(229, 9, 20, 0.25) !important;
+}
+
+/* --- 3. BOTÃO DE STATUS E MODAL DE SELEÇÃO DE DESEMPENHO --- */
+.perf-badge-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.perf-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(20, 20, 24, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #d1d1d8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.perf-mode-btn:hover {
+  background: rgba(229, 9, 20, 0.18);
+  border-color: rgba(255, 45, 63, 0.5);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.perf-mode-btn[data-profile="potente"] {
+  border-color: rgba(0, 255, 128, 0.4);
+}
+
+.perf-mode-btn[data-profile="medio"] {
+  border-color: rgba(255, 190, 0, 0.4);
+}
+
+.perf-mode-btn[data-profile="fraco"] {
+  border-color: rgba(0, 200, 255, 0.4);
+}
+
+/* Modal de Troca de Perfil */
+.perf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.perf-modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.perf-modal-card {
+  width: 100%;
+  max-width: 440px;
+  background: linear-gradient(180deg, #141418 0%, #0c0c0e 100%);
+  border: 1px solid rgba(229, 9, 20, 0.6);
+  border-radius: 18px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 25px rgba(229, 9, 20, 0.35);
+  padding: 1.4rem;
+  color: #f5f5f7;
+  position: relative;
+  transform: scale(0.95);
+  transition: transform 0.25s ease;
+}
+
+.perf-modal-backdrop.open .perf-modal-card {
+  transform: scale(1);
+}
+
+.perf-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.6rem;
+}
+
+.perf-modal-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.perf-modal-close {
+  background: transparent;
+  border: none;
+  color: #a0a0a8;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  line-height: 1;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.perf-modal-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.perf-metrics-bar {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  text-align: center;
+  font-size: 0.7rem;
+}
+
+.perf-metric-item span {
+  display: block;
+}
+
+.perf-metric-label {
+  color: #8f8f98;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.perf-metric-value {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-top: 0.1rem;
+}
+
+.perf-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.perf-option-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #e5e5eb;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.perf-option-btn:hover {
+  background: rgba(229, 9, 20, 0.12);
+  border-color: rgba(229, 9, 20, 0.5);
+}
+
+.perf-option-btn.active {
+  background: rgba(229, 9, 20, 0.2);
+  border-color: #ff2d3f;
+  box-shadow: 0 0 14px rgba(229, 9, 20, 0.35);
+}
+
+.perf-opt-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.perf-opt-content {
+  flex: 1;
+}
+
+.perf-opt-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.15rem;
+}
+
+.perf-opt-desc {
+  font-size: 0.68rem;
+  color: #9f9fa8;
+  line-height: 1.25;
+}
+
+
 
 

@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/live/css/styles.css" />
 
+  <script src="/live/js/adaptive-loading.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js" defer></script>
 </head>
@@ -225,8 +226,9 @@
         }, 850);
       }
       splash.addEventListener('click', dismissSplash);
-      // Desaparece suavemente após 3 segundos
-      setTimeout(dismissSplash, 3000);
+      // Desaparece suavemente (no modo fraco sai mais rápido para não travar o carregamento)
+      var splashDuration = (window.CaveiraAdaptive && window.CaveiraAdaptive.getProfile() === 'fraco') ? 800 : 3000;
+      setTimeout(dismissSplash, splashDuration);
     })();
   </script>
 
@@ -719,7 +721,72 @@
   <footer class="site-footer">
     <img src="/live/assets/logo.png" alt="Rádio Caveira" width="40" height="40" />
     <p>© <span id="year"></span> Rádio Caveira — Rock, Metal & Underground. Todos os direitos reservados.</p>
+    <div class="perf-badge-wrap">
+      <button type="button" class="perf-mode-btn" id="perf-mode-btn" aria-label="Alterar modo de desempenho">
+        <span id="perf-mode-label">⚡ Modo: Carregando...</span>
+      </button>
+    </div>
   </footer>
+
+  <!-- MODAL DE DESEMPENHO (ADAPTIVE LOADING) -->
+  <div class="perf-modal-backdrop" id="perf-modal" aria-hidden="true" role="dialog">
+    <div class="perf-modal-card">
+      <div class="perf-modal-header">
+        <h3 class="perf-modal-title">⚡ Desempenho & Adaptive Loading</h3>
+        <button type="button" class="perf-modal-close" id="btn-close-perf-modal" aria-label="Fechar">&times;</button>
+      </div>
+
+      <!-- Métricas detectadas do aparelho -->
+      <div class="perf-metrics-bar">
+        <div class="perf-metric-item">
+          <span class="perf-metric-label">Processador</span>
+          <span class="perf-metric-value" id="metric-cpu">-- núcleos</span>
+        </div>
+        <div class="perf-metric-item">
+          <span class="perf-metric-label">Memória RAM</span>
+          <span class="perf-metric-value" id="metric-ram">-- GB</span>
+        </div>
+        <div class="perf-metric-item">
+          <span class="perf-metric-label">Conexão</span>
+          <span class="perf-metric-value" id="metric-net">--</span>
+        </div>
+      </div>
+
+      <div class="perf-options-list">
+        <button type="button" class="perf-option-btn" data-set-profile="auto">
+          <span class="perf-opt-icon">✨</span>
+          <div class="perf-opt-content">
+            <div class="perf-opt-title">Automático (Recomendado)</div>
+            <div class="perf-opt-desc">Detecta CPU, RAM e conexão em tempo real e entrega a melhor performance.</div>
+          </div>
+        </button>
+
+        <button type="button" class="perf-option-btn" data-set-profile="potente">
+          <span class="perf-opt-icon">🚀</span>
+          <div class="perf-opt-content">
+            <div class="perf-opt-title">Potente</div>
+            <div class="perf-opt-desc">Site completo: todas as animações, faíscas, neon e visualizador VMU a 60 FPS.</div>
+          </div>
+        </button>
+
+        <button type="button" class="perf-option-btn" data-set-profile="medio">
+          <span class="perf-opt-icon">⚡</span>
+          <div class="perf-opt-content">
+            <div class="perf-opt-title">Médio</div>
+            <div class="perf-opt-desc">Mantém o visual rock, mas reduz partículas e efeitos para poupar energia.</div>
+          </div>
+        </button>
+
+        <button type="button" class="perf-option-btn" data-set-profile="fraco">
+          <span class="perf-opt-icon">🍃</span>
+          <div class="perf-opt-content">
+            <div class="perf-opt-title">Modo Lite (Fraco)</div>
+            <div class="perf-opt-desc">Remove visualizador, partículas e blurs pesados. Ideal para celulares antigos ou redes lentas.</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DE AUTENTICAÇÃO (LOGIN & CADASTRO SUPABASE) -->
   <div class="auth-modal-backdrop" id="auth-modal" aria-hidden="true" role="dialog">

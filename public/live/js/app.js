@@ -334,9 +334,24 @@ class RadioVMU {
     this.colors = ["#ff0040", "#ff00ff", "#00ffff", "#00ff41", "#ffff00"];
     this.initialized = false;
     this.data = null;
+    this.animId = null;
+    this.lastFrame = 0;
     this.resize();
     addEventListener("resize", () => this.resize());
+    window.addEventListener("caveira:perf-changed", () => this.onPerfChanged());
     this.animate();
+  }
+  onPerfChanged() {
+    const prof = window.CaveiraAdaptive ? window.CaveiraAdaptive.getProfile() : "potente";
+    if (prof === "fraco") {
+      if (this.animId) cancelAnimationFrame(this.animId);
+      this.animId = null;
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    } else {
+      if (!this.animId) {
+        this.animate();
+      }
+    }
   }
   resize() {
     const r = this.canvas.getBoundingClientRect();
@@ -376,7 +391,24 @@ class RadioVMU {
     }
   }
   animate() {
-    const { ctx, canvas, bars, colors } = this;
+    const prof = window.CaveiraAdaptive ? window.CaveiraAdaptive.getProfile() : "potente";
+    if (prof === "fraco") {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.animId = null;
+      return;
+    }
+
+    const now = performance.now();
+    // No modo médio, limita a 30 FPS para poupar CPU/GPU
+    if (prof === "medio" && now - this.lastFrame < 33) {
+      this.animId = requestAnimationFrame(() => this.animate());
+      return;
+    }
+    this.lastFrame = now;
+
+    const { ctx, canvas, colors } = this;
+    const bars = prof === "medio" ? 32 : 64;
+    const withBlur = prof === "potente";
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
 
@@ -386,7 +418,7 @@ class RadioVMU {
       arr = this.data;
     } else {
       // idle: onda suave animada
-      const t = performance.now() / 500;
+      const t = now / 500;
       arr = new Uint8Array(bars);
       for (let i = 0; i < bars; i++) arr[i] = 40 + Math.abs(Math.sin(t + i * 0.35)) * 60;
     }
@@ -402,17 +434,19 @@ class RadioVMU {
       const grad = ctx.createLinearGradient(x, y, x, h);
       grad.addColorStop(0, c1);
       grad.addColorStop(1, c2);
-      ctx.shadowColor = c1;
-      ctx.shadowBlur = 18;
+      if (withBlur) {
+        ctx.shadowColor = c1;
+        ctx.shadowBlur = 18;
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(x + 1, y, Math.max(1, bw - 2), bh);
       // brilho topo
-      ctx.shadowBlur = 26;
+      if (withBlur) ctx.shadowBlur = 26;
       ctx.fillStyle = "rgba(255,255,255,0.35)";
       ctx.fillRect(x + 1, y, Math.max(1, bw - 2), 2);
     }
-    ctx.shadowBlur = 0;
-    requestAnimationFrame(() => this.animate());
+    if (withBlur) ctx.shadowBlur = 0;
+    this.animId = requestAnimationFrame(() => this.animate());
   }
 }
 const vmu = new RadioVMU($("vmu-canvas"));
@@ -1551,38 +1585,76 @@ function setupShare() {
 /* ============================================================
    PARTÍCULAS (canvas)
    ============================================================ */
+let particlesRunning = false;
+let particlesAnimId = null;
+
 function initParticles() {
   const canvas = $("particles");
+  if (!canvas) return;
   const ctx = canvas.getContext("2d");
   let W, H, particles;
+
   function resize() {
-    // clientWidth/clientHeight excluem a barra de rolagem (innerWidth a inclui
-    // e provocava overflow horizontal intermitente)
     W = canvas.width = document.documentElement.clientWidth;
     H = canvas.height = document.documentElement.clientHeight;
   }
+
   function make() {
-    particles = Array.from({ length: Math.min(70, Math.floor(W / 22)) }, () => ({
+    const prof = window.CaveiraAdaptive ? window.CaveiraAdaptive.getProfile() : "potente";
+    const maxParticles = prof === "medio" ? 24 : 70;
+    const divider = prof === "medio" ? 50 : 22;
+    particles = Array.from({ length: Math.min(maxParticles, Math.floor(W / divider)) }, () => ({
       x: Math.random() * W, y: Math.random() * H,
       r: Math.random() * 2 + 0.5, vy: Math.random() * 0.5 + 0.15,
       vx: (Math.random() - 0.5) * 0.3, a: Math.random() * 0.5 + 0.2,
     }));
   }
+
   function draw() {
+    const prof = window.CaveiraAdaptive ? window.CaveiraAdaptive.getProfile() : "potente";
+    if (prof === "fraco") {
+      ctx.clearRect(0, 0, W, H);
+      particlesRunning = false;
+      return;
+    }
     ctx.clearRect(0, 0, W, H);
+    const withBlur = prof === "potente";
     particles.forEach((p) => {
       p.y -= p.vy; p.x += p.vx;
       if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; }
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(229, 9, 20, ${p.a})`;
-      ctx.shadowColor = "#ff2d3f"; ctx.shadowBlur = 8;
+      if (withBlur) {
+        ctx.shadowColor = "#ff2d3f";
+        ctx.shadowBlur = 8;
+      }
       ctx.fill();
     });
-    requestAnimationFrame(draw);
+    if (withBlur) ctx.shadowBlur = 0;
+    particlesAnimId = requestAnimationFrame(draw);
   }
-  resize(); make(); draw();
-  addEventListener("resize", () => { resize(); make(); });
+
+  function update() {
+    const prof = window.CaveiraAdaptive ? window.CaveiraAdaptive.getProfile() : "potente";
+    if (prof === "fraco") {
+      if (particlesAnimId) cancelAnimationFrame(particlesAnimId);
+      particlesAnimId = null;
+      particlesRunning = false;
+      ctx.clearRect(0, 0, W, H);
+      return;
+    }
+    make();
+    if (!particlesRunning) {
+      particlesRunning = true;
+      particlesAnimId = requestAnimationFrame(draw);
+    }
+  }
+
+  resize();
+  update();
+  addEventListener("resize", () => { resize(); update(); });
+  window.addEventListener("caveira:perf-changed", () => { update(); });
 }
 
 // Botão Mini Player → abre direto o Picture-in-Picture nativo do SO
@@ -2276,6 +2348,84 @@ async function toggleOsPictureInPicture() {
 }
 
 /* ============================================================
+   MODAL DE DESEMPENHO (ADAPTIVE LOADING)
+   ============================================================ */
+function initPerfModal() {
+  const btnOpen = $("perf-mode-btn");
+  const modal = $("perf-modal");
+  const btnClose = $("btn-close-perf-modal");
+  if (!btnOpen || !modal) return;
+
+  function openModal() {
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    updateModalView();
+  }
+
+  function closeModal() {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  btnOpen.addEventListener("click", openModal);
+  if (btnClose) btnClose.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
+  });
+
+  function updateModalView() {
+    if (!window.CaveiraAdaptive) return;
+    const metrics = window.CaveiraAdaptive.getMetrics();
+    const currentProf = window.CaveiraAdaptive.getProfile();
+    const isAuto = window.CaveiraAdaptive.isAuto();
+
+    const elCpu = $("metric-cpu");
+    const elRam = $("metric-ram");
+    const elNet = $("metric-net");
+
+    if (elCpu) elCpu.textContent = metrics.cores ? `${metrics.cores} núcleos` : "N/D";
+    if (elRam) elRam.textContent = metrics.memory ? `~${metrics.memory} GB` : "Não informado";
+    if (elNet) elNet.textContent = `${metrics.effectiveType ? metrics.effectiveType.toUpperCase() : "OK"}${metrics.saveData ? " (Eco)" : ""}`;
+
+    const optionBtns = modal.querySelectorAll(".perf-option-btn");
+    optionBtns.forEach((btn) => {
+      const targetProf = btn.getAttribute("data-set-profile");
+      const isSelected = isAuto ? targetProf === "auto" : targetProf === currentProf;
+      btn.classList.toggle("active", isSelected);
+    });
+  }
+
+  const optionBtns = modal.querySelectorAll(".perf-option-btn");
+  optionBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = btn.getAttribute("data-set-profile");
+      if (window.CaveiraAdaptive) {
+        window.CaveiraAdaptive.setProfile(mode);
+        updateModalView();
+        if (window.showToast) {
+          const names = { auto: "Automático", potente: "Potente", medio: "Médio", fraco: "Modo Lite" };
+          window.showToast(`Perfil alterado para: ${names[mode] || mode} ⚡`, "success");
+        }
+      }
+      setTimeout(closeModal, 250);
+    });
+  });
+}
+
+// Timer adaptativo de atualização da música atual (Now Playing)
+let nowPlayingTimer = null;
+function setupNowPlayingTimer() {
+  if (nowPlayingTimer) clearInterval(nowPlayingTimer);
+  const prof = window.CaveiraAdaptive ? window.CaveiraAdaptive.getProfile() : "potente";
+  // No modo fraco, dobra o intervalo de requisições de rede (20s) para economizar dados e bateria
+  const intervalMs = prof === "fraco" ? Math.max((CFG.REFRESH_MS || 10000) * 2, 20000) : (CFG.REFRESH_MS || 10000);
+  nowPlayingTimer = setInterval(updateNowPlaying, intervalMs);
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 $("year").textContent = new Date().getFullYear();
@@ -2285,7 +2435,10 @@ setupMediaSession();    // integra com teclas de mídia do PC/Windows
 setupOsPip();          // inicializa o canvas/vídeo do PiP antes dos botões
 initMainPipButton();   // conecta o botão Mini Player → PiP nativo do SO
 initStickyObserver();  // sticky player do rodapé
+initPerfModal();       // modal de desempenho e adaptive loading
 tickClock(); setInterval(tickClock, 1000);
 loadWeather(); setInterval(loadWeather, 10 * 60 * 1000);
 loadNews(); setInterval(loadNews, 15 * 60 * 1000);
-updateNowPlaying(); setInterval(updateNowPlaying, CFG.REFRESH_MS);
+updateNowPlaying();
+setupNowPlayingTimer();
+window.addEventListener("caveira:perf-changed", setupNowPlayingTimer);
