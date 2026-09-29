@@ -66,7 +66,7 @@ window.CAVEIRA_CONFIG = {
   ],
 
   // --- Buscador de playlist ---
-  PLAYLIST_FINDER_URL: "https://discography-finder.ai.studio/",
+  PLAYLIST_FINDER_URL: "https://discography-finder.caveira.uk",
 
   // --- Cache de capas ---
   COVER_CACHE_TTL_DAYS: 7,

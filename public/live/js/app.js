@@ -1523,7 +1523,7 @@ function setupShare() {
   });
   $("qrcode").src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&bgcolor=ffffff&color=000000&data=${encodeURIComponent(CFG.QR_TARGET)}`;
   const pf = $("playlist-finder-link");
-  if (pf) pf.href = CFG.PLAYLIST_FINDER_URL || "https://discography-finder.ai.studio/";
+  if (pf) pf.href = CFG.PLAYLIST_FINDER_URL || "https://discography-finder.caveira.uk";
 
   // Botões de cópia direta (VLC, Winamp Classic, etc.)
   document.querySelectorAll("[data-copy-url]").forEach((btn) => {
