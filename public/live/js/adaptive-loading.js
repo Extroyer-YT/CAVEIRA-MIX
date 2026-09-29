@@ -179,4 +179,56 @@
     setProfile,
     getMetrics: getHardwareMetrics,
   };
+
+  // ================== MONITORAMENTO DINÂMICO DE FPS ==================
+  // Mede os quadros por segundo em tempo real e rebaixa ou reajusta o perfil
+  // caso o dispositivo engasgue rodando as animações/scripts da página.
+  (function initFpsMonitor() {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let consecutiveLowFpsCount = 0;
+    let consecutiveMediumFpsCount = 0;
+
+    function checkFpsLoop(now) {
+      frameCount++;
+      const elapsed = now - lastTime;
+
+      // Amostra a cada ~1.5 segundos para obter uma média estável de FPS
+      if (elapsed >= 1500) {
+        const fps = Math.round((frameCount * 1000) / elapsed);
+        frameCount = 0;
+        lastTime = now;
+
+        // Só adapta se o usuário estiver em modo automático e a aba estiver visível
+        if (!localStorage.getItem(STORAGE_KEY) && !document.hidden) {
+          // Se o FPS cair abaixo de 28 persistentemente (aparelho travando ou engasgando)
+          if (fps < 28) {
+            consecutiveLowFpsCount++;
+            consecutiveMediumFpsCount = 0;
+            // 2 amostras seguidas com FPS baixo (~3 segundos seguidos)
+            if (consecutiveLowFpsCount >= 2 && currentProfile !== "fraco") {
+              applyProfile("fraco", true);
+            }
+          } else if (fps < 45) {
+            // FPS mediano/oscilante (entre 28 e 45)
+            consecutiveMediumFpsCount++;
+            consecutiveLowFpsCount = 0;
+            // Se estiver em 'potente' e não conseguir segurar 45+ fps, reduz para 'medio'
+            if (consecutiveMediumFpsCount >= 3 && currentProfile === "potente") {
+              applyProfile("medio", true);
+            }
+          } else {
+            // FPS saudável (>= 45 fps)
+            consecutiveLowFpsCount = 0;
+            consecutiveMediumFpsCount = 0;
+          }
+        }
+      }
+
+      requestAnimationFrame(checkFpsLoop);
+    }
+
+    // Inicia o loop de medição
+    requestAnimationFrame(checkFpsLoop);
+  })();
 })();
